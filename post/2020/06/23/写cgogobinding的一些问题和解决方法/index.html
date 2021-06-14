@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.73.0" />
+
+
+<title>写cgo(gobinding)的一些问题和解决方法 - Dashjay&#39;s</title>
+<meta property="og:title" content="写cgo(gobinding)的一些问题和解决方法 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">2 min read</span>
+    
+
+
+    <h1 class="article-title">写cgo(gobinding)的一些问题和解决方法</h1>
+
+    
+    <span class="article-date">2020-06-23</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      
+<h2 id="综述">综述 <a href="#%e7%bb%bc%e8%bf%b0">¶</a></h2>
+<p>写 <code>cgo</code> 不是写出来的，而是调试出来的，想要给一个c库写 <code>gobinding</code> 往往会遇得到你意向不大到的困难。</p>
+<ul>
+<li>内存泄露</li>
+<li>类型转换</li>
+<li>函数调用</li>
+<li>非标准c接口（c++问题）</li>
+</ul>
+<p>这里以我的经历开始记录一下，我给公司写一个动态库 <code>so</code> 的 <code>gobinding</code> 的过程。简述一下我曲折的道路：</p>
+<ul>
+<li>
+<p>一开始，公司只给一个 <code>so</code> ，和原来用 <code>python</code> 写的一个 <code>gobinding</code> ，我发现原来的py脚本用的类似于 <code>ffi</code> 的方法，就是动态 <code>load</code> ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。</p>
+</li>
+<li>
+<p>问了前辈说能给提供一个.h头文件，遂开始写了。想</p>
+</li>
+</ul>
+
+<h2 id="开始">开始 <a href="#%e5%bc%80%e5%a7%8b">¶</a></h2>
+
+<h3 id="在-golang-中引入头文件">在 <code>golang</code> 中引入头文件 <a href="#%e5%9c%a8-golang-%e4%b8%ad%e5%bc%95%e5%85%a5%e5%a4%b4%e6%96%87%e4%bb%b6">¶</a></h3>
+<p>如果头文件不是很长的话，建议直接写在一个文件里。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-golang" data-lang="golang"><span style="color:#fff;font-weight:bold">package</span> goskynet
+
+<span style="color:#007f7f">/*
+</span><span style="color:#007f7f">#cgo LDFLAGS: -L${SRCDIR} -lskynet_external
+</span><span style="color:#007f7f">#include ...
+</span><span style="color:#007f7f">....
+</span><span style="color:#007f7f">....
+</span><span style="color:#007f7f">*/</span>
+<span style="color:#fff;font-weight:bold">import</span> <span style="color:#0ff;font-weight:bold">&#34;C&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其中 <code>import &quot;C&quot;</code> 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。</p>
+
+<h3 id="将自定义的c类型---golang">将自定义的C类型 -&gt; golang <a href="#%e5%b0%86%e8%87%aa%e5%ae%9a%e4%b9%89%e7%9a%84c%e7%b1%bb%e5%9e%8b---golang">¶</a></h3>
+<p>目的是，在包外调用时无需再 <strong>针对C相关的包</strong> 申明任何东西，也就是无需再外部 <code>import &quot;C&quot;</code></p>
+<p>类型转化只要注意一个问题就好，就是类型是否经过 <code>typedef</code> 类型定义，如果经过了，在golang中无需指定struct</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c++" data-lang="c++"><span style="color:#fff;font-weight:bold">typedef</span> <span style="color:#fff;font-weight:bold">struct</span> skynet_t skynet_t; <span style="color:#007f7f">// c中typedef
+</span><span style="color:#007f7f"></span>
+type SkynetT C.skynet_t <span style="color:#007f7f">// golang 中
+</span></code></pre></td></tr></table>
+</div>
+</div><p>否则的话</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c++" data-lang="c++"><span style="color:#fff;font-weight:bold">struct</span> skynet_t; <span style="color:#007f7f">// c 中未typedef
+</span><span style="color:#007f7f"></span>
+type SkynetT C.struct_skynet_t <span style="color:#007f7f">// golang 中
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我在头文件中看到了，所有类都经过了typedef，无需我申明了。</p>
+<p>于是我首先给所有类的用type定义到golang这边来。</p>
+
+<h3 id="翻译函数">翻译函数 <a href="#%e7%bf%bb%e8%af%91%e5%87%bd%e6%95%b0">¶</a></h3>
+<p>把C的函数放到golang这边，并不难，但是在类型转化过程中会有一些困难。</p>
+
+<h4 id="举例1">举例1 <a href="#%e4%b8%be%e4%be%8b1">¶</a></h4>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c++" data-lang="c++">skynet_t *skynet_new(<span style="color:#fff;font-weight:bold">const</span> skynet_conf_t *conf, <span style="color:#fff;font-weight:bold">const</span> <span style="color:#fff;font-weight:bold">char</span> *policy);
+</code></pre></td></tr></table>
+</div>
+</div><p>这个函数写到golang这边，首先返回值，两个参数都是指针</p>
+<ul>
+<li>
+<p>尽量每次操作指针都转换，golang并不会隐式的帮你转换类型</p>
+</li>
+<li>
+<p>往c传时强制转换成c的类型，返回golang就相反</p>
+</li>
+<li>
+<p>转化</p>
+<ul>
+<li>返回值强制转化(*SkynetT)()</li>
+<li>传入c强制转化<code>(*C.skynet_conf_t)(conf)</code>和<code>(*C.char)(unsafe.Pointer(&amp;policy[0]))</code></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-golang" data-lang="golang"><span style="color:#007f7f">// SkynetNew wrap the func -&gt; |skynet_t *skynet_new|
+</span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">func</span> SkynetNew(conf *SkynetConf, policy []<span style="color:#fff;font-weight:bold">byte</span>) *SkynetT {
+ <span style="color:#fff;font-weight:bold">return</span> (*SkynetT)(C.skynet_new((*C.skynet_conf_t)(conf), (*C.char)(unsafe.Pointer(&amp;policy[<span style="color:#ff0;font-weight:bold">0</span>]))))
+}
+</code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="举例2">举例2 <a href="#%e4%b8%be%e4%be%8b2">¶</a></h4>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-c++" data-lang="c++">skynet_status_t skynet_classify(skynet_request_t *req,
+skynet_classify_type_t type,
+<span style="color:#fff;font-weight:bold">const</span> <span style="color:#fff;font-weight:bold">void</span> *data,
+size_t length,
+skynet_result_t *result);
+
+</code></pre></td></tr></table>
+</div>
+</div><p>这个函数有五个参数，分别是：
+- skynet_request_t(c类型)
+- uint32
+- void *
+- ulong(size_t)
+- skynet_result_t(c类型)</p>
+<p>返回值是一个int32在调用它的过程中，搞出了很多问题（内存泄露、参数传输错误）</p>
+<p>先写出结论来，再说到底怎么回事</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-go" data-lang="go"><span style="color:#fff;font-weight:bold">func</span> (s *SkynetRequest) Classify(t <span style="color:#fff;font-weight:bold">uint32</span>, data []<span style="color:#fff;font-weight:bold">byte</span>, res *SkynetResult) <span style="color:#fff;font-weight:bold">int32</span> {
+    payload := C.CBytes(data)
+    <span style="color:#fff;font-weight:bold">defer</span> C.free(payload)
+    <span style="color:#fff;font-weight:bold">var</span> status = C.skynet_classify(
+        (*C.skynet_request_t)(s),
+        (C.<span style="color:#fff;font-weight:bold">uint</span>)(t),
+        payload,
+        C.ulong(<span style="color:#fff;font-weight:bold">len</span>(data)),
+        (*C.skynet_result_t)(res))
+    <span style="color:#fff;font-weight:bold">return</span> <span style="color:#fff;font-weight:bold">int32</span>(status)
+}
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>第一个参数：</strong> 首先，这个函数传了request作为第一个参数，我这应该是可以看做this指针，因此我将此方法，定义到该类型上，并且使用了指针：<code>func (s *SkynetRequest) Classify...</code>，这样可以方便使用s来作为函数的第一个参数</p>
+<p><strong>第二个参数：</strong> 是一个uint而已，但是为了安全仍然进行转换。</p>
+<p><strong>第三个参数：</strong> 是一个<code>const void *data</code>但是根据猜测，payload是一个字符串，<strong>第四个参数：</strong> 指定了他的长度，因此一开始我直接用了char也就是<code>C.CString()</code>传入，报错了<code>char as uchar</code>,但是却不知道<code>uchar</code>怎么传，网上各种骚办法，最后都没人说其实<code>uchar=byte</code>, 使用<code>C.CBytes(data)</code>传入完美解决，这里data的传入gc只会搞定<code>byte slice</code>，C那边的内存需要使用<code>free</code>来操作。</p>
+<p><strong>第五个参数：</strong> 是一个库内的指针，直接传入引用即可，但是一定要在传入前进行强制类型转换，否则也会报错。</p>
+<p>其中没什么经验，很多都是一点一点试出来的，网络上资料很少，走了很多弯路，仍然有很多问题，这时候意识到自己基础的薄弱，有时候连个作用域都拿不准，不敢free又造成了内存泄露的问题出现，长路漫漫，加油。</p>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+
+</body>
+
+</html>
+
+  
+</main>

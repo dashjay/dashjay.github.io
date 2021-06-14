@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.73.0" />
+
+
+<title>golang实现超lcx功能 - Dashjay&#39;s</title>
+<meta property="og:title" content="golang实现超lcx功能 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">1 min read</span>
+    
+
+
+    <h1 class="article-title">golang实现超lcx功能</h1>
+
+    
+    <span class="article-date">2020-06-26</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      <blockquote>
+<p>今年有一个端口流量转发的需求</p>
+<p>发请求者-&gt;转发器 -&gt;</p>
+<ul>
+<li>-&gt; 业务1</li>
+<li>-&gt; 业务2</li>
+</ul>
+</blockquote>
+<p>并且不仅是转发，需要他们在转发的同时就dump出一份来，否则用nginx就挺好（我知道可以给nginx写插件，但是我太菜了c基础不够好）</p>
+<p>看了著名工具lcx之后，上手自己写一个，发现用<code>golang</code>的时候事情并没有那么复杂，只需要很简单的一些操作就能可以完成。</p>
+
+<h3 id="copy模式">copy模式 <a href="#copy%e6%a8%a1%e5%bc%8f">¶</a></h3>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">23
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">24
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">25
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">26
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">27
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">28
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-go" data-lang="go">conn, err := lis.Accept()
+ <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+  log.Printf(<span style="color:#0ff;font-weight:bold">&#34;[x] accept error, detail: [%s]&#34;</span>, conn)
+  <span style="color:#fff;font-weight:bold">return</span>
+ }
+ conn2, err := net.Dial(<span style="color:#0ff;font-weight:bold">&#34;tcp&#34;</span>, target)
+ <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+  log.Printf(<span style="color:#0ff;font-weight:bold">&#34;[x] connect to target error, detail: [%s]&#34;</span>, err)
+  <span style="color:#fff;font-weight:bold">return</span>
+ }
+ log.Printf(<span style="color:#0ff;font-weight:bold">&#34;[+] transfer between [%s] &lt;-&gt; [%s]&#34;</span>,
+             conn.LocalAddr(), conn2.RemoteAddr())
+ <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>() {
+  <span style="color:#fff;font-weight:bold">var</span> wg sync.WaitGroup
+  wg.Add(<span style="color:#ff0;font-weight:bold">2</span>)
+  <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>() {
+   io.Copy(conn2, conn)
+   wg.Done()
+  }()
+
+  <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>() {
+   io.Copy(conn, conn2)
+   wg.Done()
+  }()
+  wg.Wait()
+  conn.Close()
+  conn2.Close()
+ }()
+</code></pre></td></tr></table>
+</div>
+</div><p>核心仅仅这一段代码，即可完成，<code>goroutine</code>这个机制真的给我们提供了太多的便利。</p>
+
+<h3 id="proxy模式">proxy模式 <a href="#proxy%e6%a8%a1%e5%bc%8f">¶</a></h3>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-go" data-lang="go"> p := &amp;httputil.ReverseProxy{
+  Director:       s.director,
+  Transport:      &amp;myTripper{RoundTripper: http.DefaultTransport},
+  ModifyResponse: s.modifyResponse,
+ }
+ <span style="color:#fff;font-weight:bold">panic</span>(http.Serve(s.lis, p))
+</code></pre></td></tr></table>
+</div>
+</div><p>本模式大量基于http包来编写，主要工作在中间件开发上。</p>
+
+<h3 id="blend模式">blend模式 <a href="#blend%e6%a8%a1%e5%bc%8f">¶</a></h3>
+<p>混合两种模式，并且创造出一个兼具两者行为优点的蜜罐。</p>
+<p>以上的代码开源在
+<a href="https://github.com/dashjay/superlcx" target="_blank" rel="noopener">superlcx</a>
+</p>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+  
+</main>

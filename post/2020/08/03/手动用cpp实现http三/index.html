@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.73.0" />
+
+
+<title>手动用cpp实现http(三) - Dashjay&#39;s</title>
+<meta property="og:title" content="手动用cpp实现http(三) - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">2 min read</span>
+    
+
+
+    <h1 class="article-title">手动用cpp实现http(三)</h1>
+
+    
+    <span class="article-date">2020-08-03</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      <p>创建于 2020-07-31，最终修订于 2020-08-06</p>
+<p>在之前的
+<a href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response" target="_blank" rel="noopener">课程(二)</a>
+中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：</p>
+<p>今天的任务是 &ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&rdquo;。</p>
+<p>所有的代码都在 <a href="https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog">https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog</a> 中</p>
+<p>Let&rsquo;s do it</p>
+
+<h2 id="0x1-为什么要载入配置文件">0x1 为什么要载入配置文件 <a href="#0x1-%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e8%bd%bd%e5%85%a5%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6">¶</a></h2>
+<p>众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如：</p>
+<ul>
+<li>程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。</li>
+<li>平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。</li>
+</ul>
+<p>当遇到这些内容修改时，我们是不希望再编译一遍的。</p>
+<p>而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。</p>
+<p>我推荐使用 
+<a href="https://github.com/toml-lang/toml" target="_blank" rel="noopener">TOML</a>
+ 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。</p>
+<p>经过一些选择之后我找到一个库，叫 
+<a href="https://github.com/skystrife/cpptoml" target="_blank" rel="noopener">cpptoml</a>
+</p>
+
+<h2 id="0x2-cpptoml">0x2 cpptoml <a href="#0x2-cpptoml">¶</a></h2>
+<p><code>A header-only library for parsing TOML configuration files.</code></p>
+
+<h3 id="安装">安装 <a href="#%e5%ae%89%e8%a3%85">¶</a></h3>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-bash" data-lang="bash">git clone https://github.com/toml-lang/toml.git
+<span style="color:#fff;font-weight:bold">cd</span> toml; mkdir build; <span style="color:#fff;font-weight:bold">cd</span> build
+cmake .. &amp;&amp; make &amp;&amp; make install
+</code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<p>看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？
+到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。</p>
+</blockquote>
+
+<h3 id="小尝试">小尝试 <a href="#%e5%b0%8f%e5%b0%9d%e8%af%95">¶</a></h3>
+<p>本次的所有代码都基于
+<a href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response" target="_blank" rel="noopener">上次课程</a>
+的开始。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-cpp" data-lang="cpp"><span style="color:#0f0;font-weight:bold">#include</span><span style="color:#0f0;font-weight:bold">&lt;iostream&gt;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold">#include</span> <span style="color:#0f0;font-weight:bold">&#34;cxxhttp.h&#34;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold">#include</span> <span style="color:#0f0;font-weight:bold">&#34;cpptoml.h&#34;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold"></span>
+<span style="color:#fff;font-weight:bold">int</span> main() {
+    <span style="color:#fff;font-weight:bold">auto</span> config = cpptoml::parse_file(<span style="color:#0ff;font-weight:bold">&#34;./config.toml&#34;</span>);
+    <span style="color:#fff;font-weight:bold">auto</span> port = config-&gt;get_qualified_as&lt;in_addr_t&gt;(<span style="color:#0ff;font-weight:bold">&#34;ENV.port&#34;</span>);
+    std::cout &lt;&lt; <span style="color:#0ff;font-weight:bold">&#34;server will start at port &#34;</span> &lt;&lt; *port &lt;&lt; <span style="color:#0ff;font-weight:bold">&#39;\n&#39;</span>;
+
+    Request req(<span style="color:#0ff;font-weight:bold">&#34;GET&#34;</span>, <span style="color:#0ff;font-weight:bold">&#34;/&#34;</span>, <span style="color:#0ff;font-weight:bold">&#34;body&#34;</span>);
+    ...
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>当你写成这样尝试 make 的时候，你会发现</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-bash" data-lang="bash">» make
+[ 25%] Building CXX object CMakeFiles/main.dir/main.cpp.o
+/Users/dashjay/CLionProjects/http_demo/main.cpp:4:10: fatal error: <span style="color:#0ff;font-weight:bold">&#39;cpptoml.h&#39;</span> file not found
+<span style="color:#007f7f">#include &#34;cpptoml.h&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>和之前的原因一样，你得在 CMakeLists.txt 中加上 <code>include_directories(/usr/local/include)</code> 或者你的 cpptoml 安装的位置。</p>
+<p>当你运行会得到如下的结果</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-text" data-lang="text">server will start at port 8083
+....
+</code></pre></td></tr></table>
+</div>
+</div><p>前提是，运行目录下方有一个 <code>config.toml</code> 文件，</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-toml" data-lang="toml">[ENV]
+port = <span style="color:#ff0;font-weight:bold">8083</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>为什么使用*port来取值：</strong> 通过源代码我们发现 <code>auto port = ....</code> 的得到的不是目标类型的对象，而是一个叫做 option 的对象，下面有一些代码解释。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-cpp" data-lang="cpp"><span style="color:#fff;font-weight:bold">template</span> &lt;<span style="color:#fff;font-weight:bold">class</span> T&gt;
+<span style="color:#fff;font-weight:bold">class</span> option
+{
+  <span style="color:#fff;font-weight:bold">public</span>:
+    ......  
+    <span style="color:#fff;font-weight:bold">explicit</span> <span style="color:#fff;font-weight:bold">operator</span> <span style="color:#fff;font-weight:bold">bool</span>() <span style="color:#fff;font-weight:bold">const</span>
+    {
+        <span style="color:#fff;font-weight:bold">return</span> !empty_;
+    }
+
+    <span style="color:#fff;font-weight:bold">const</span> T&amp; <span style="color:#fff;font-weight:bold">operator</span>*() <span style="color:#fff;font-weight:bold">const</span>
+    {
+        <span style="color:#fff;font-weight:bold">return</span> value_;
+    }
+
+    <span style="color:#fff;font-weight:bold">const</span> T* <span style="color:#fff;font-weight:bold">operator</span>-&gt;() <span style="color:#fff;font-weight:bold">const</span>
+    {
+        <span style="color:#fff;font-weight:bold">return</span> &amp;value_;
+    }
+    ...
+</code></pre></td></tr></table>
+</div>
+</div><p>我们可以看到，返回的对象被重载了 <code>bool()</code>, <code>*</code>, <code>-&gt;</code> 三种操作符：分别可以得到， <strong>对象是否为空</strong>，<strong>对象的引用</strong>，<strong>指向对象的指针</strong>三个值。</p>
+
+<h2 id="0x3-为什么不使用stdcout或stdcerr-来输出日志">0x3 为什么不使用std::cout或std::cerr 来输出日志 <a href="#0x3-%e4%b8%ba%e4%bb%80%e4%b9%88%e4%b8%8d%e4%bd%bf%e7%94%a8stdcout%e6%88%96stdcerr-%e6%9d%a5%e8%be%93%e5%87%ba%e6%97%a5%e5%bf%97">¶</a></h2>
+<p>输出到标准输出和标准错误的日志，会因为多线程的原因，产生一些堆叠，在这里我就不进行演示了，你可以想象，100个线程毫无避讳的使用 <code>std::cout &lt;&lt; ...</code> 时，会产生大量重叠，丢失，的情况。</p>
+<p>虽然使用log程序会产生一些锁的开销，但是目前看来是值得的：</p>
+<ul>
+<li>帮助我们debug，有不同的颜色，层级来标注</li>
+<li>不会因为多线程的使用而错乱<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup></li>
+</ul>
+
+<h2 id="0x4-spdlog">0x4 spdlog <a href="#0x4-spdlog">¶</a></h2>
+<blockquote>
+<p>Very fast, header-only/compiled, C++ logging library.</p>
+</blockquote>
+<p>在搜索查询了不少 log 库，诸如什么 log4cpp 之类的，发现他们都比较臃肿，有的还需要单独的配置文件，没有这个库容易使用。</p>
+<p>
+<a href="https://github.com/gabime/spdlog" target="_blank" rel="noopener">spdlog</a>
+</p>
+<p>安装什么的应该不用我说吧，它有cmake，和之前的操作一样即可。这个也是一个纯header的库，无需链接。</p>
+<p>写了一些代码修改之后的主文件如下</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2">
+<table style="border-spacing:0;padding:0;margin:0;border:0;width:auto;overflow:auto;display:block;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2"><code class="language-cpp" data-lang="cpp"><span style="color:#0f0;font-weight:bold">#include</span><span style="color:#0f0;font-weight:bold">&lt;iostream&gt;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold">#include</span> <span style="color:#0f0;font-weight:bold">&#34;spdlog/spdlog.h&#34;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold">#include</span> <span style="color:#0f0;font-weight:bold">&#34;cxxhttp.h&#34;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold">#include</span> <span style="color:#0f0;font-weight:bold">&#34;cpptoml.h&#34;</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold"></span>
+<span style="color:#fff;font-weight:bold">int</span> main() {
+    <span style="color:#fff;font-weight:bold">auto</span> config = cpptoml::parse_file(<span style="color:#0ff;font-weight:bold">&#34;./config.toml&#34;</span>);
+    <span style="color:#fff;font-weight:bold">auto</span> port = config-&gt;get_qualified_as&lt;in_addr_t&gt;(<span style="color:#0ff;font-weight:bold">&#34;ENV.port&#34;</span>);
+    std::cout &lt;&lt; <span style="color:#0ff;font-weight:bold">&#34;server will start at port &#34;</span> &lt;&lt; *port &lt;&lt; <span style="color:#0ff;font-weight:bold">&#39;\n&#39;</span>;
+
+    Request req(<span style="color:#0ff;font-weight:bold">&#34;GET&#34;</span>, <span style="color:#0ff;font-weight:bold">&#34;/&#34;</span>, <span style="color:#0ff;font-weight:bold">&#34;body&#34;</span>);
+
+    spdlog::info(<span style="color:#0ff;font-weight:bold">&#34;request: {}&#34;</span>, req.to_string());
+
+    Response resp;
+    resp.proto = <span style="color:#0ff;font-weight:bold">&#34;HTTP/1.1&#34;</span>;
+    resp.status = <span style="color:#0ff;font-weight:bold">&#34;200 OK&#34;</span>;
+    resp.body = <span style="color:#0ff;font-weight:bold">&#34;body&#34;</span>;
+
+    spdlog::info(<span style="color:#0ff;font-weight:bold">&#34;response: {}&#34;</span>, resp.to_string());
+}
+</code></pre></td></tr></table>
+</div>
+</div><p><code>request: {}</code> 中的 <code>{}</code> 是一个占位符，他没有选择用常见的 <code>%s %d</code>， 来完成格式化字符串，而是使用了 <code>{}</code>，该库介绍说性能很高，不应该指定类型性能会更高么，不是很明白，不过不影响我们使用它。</p>
+<p>这样全局调用即可，如果我们没有什么更高级的需求。</p>
+<p>今天的内容有点水了，这可是为了我们下面最难的一节做一些铺垫，我可不想看到以为重新编译一遍就能解决问题的你，疯狂make……</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>在这一点上我并没有写代码确认，也没有阅读源代码，在这里这么描述是不负责的，但是多线程使用 <code>std::cout &lt;&lt; 或 std::cerr &lt;&lt;</code> 是肯定会产生一些错误的。 <a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+
+</body>
+
+</html>
+
+  
+</main>
