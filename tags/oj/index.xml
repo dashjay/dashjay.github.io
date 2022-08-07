@@ -6,24 +6,22 @@
     <description>Recent content in OJ on Dashjay&#39;s</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="/tags/oj/index.xml" rel="self" type="application/rss+xml" />
-    
-    
+    <lastBuildDate>Mon, 02 Sep 2019 00:00:00 +0000</lastBuildDate><atom:link href="/tags/oj/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>使用modelsim_ase &#43; flask实现了一个测评沙箱</title>
       <link>/post/2019/09/02/modelsim-ase-flask/</link>
       <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
       
       <guid>/post/2019/09/02/modelsim-ase-flask/</guid>
-      <description>二话不说先甩上Github连接 Verilog-Judge-USTB Verilog-Judge-USTB ¶ 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写
+      <description>二话不说先甩上Github连接 Verilog-Judge-USTB
+Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写
 A verilog online judger from USTB, based on Flask-python
-Usage ¶ 构建(build)
-1 2 3  git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge   运行(run)
-1  docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000    内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部
- 测试(test)
-1 2  chmod +x test.sh python test.py | python -m json.tool     以下是测试输出</description>
+Usage 构建(build)
+1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run)
+1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部
+测试(test)
+1 2 chmod +x test.sh python test.py | python -m json.tool 以下是测试输出
+1 2 3 4 5 6 { &amp;#34;cmpcode&amp;#34;: 1, &amp;#34;cmpresult&amp;#34;: &amp;#34;Start time: 07:46:33 on Sep 02,2019\nvlog top_module.</description>
     </item>
     
   </channel>
