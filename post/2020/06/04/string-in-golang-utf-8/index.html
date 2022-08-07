@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.101.0" />
+
+
+<title>Golang 字符串 - Dashjay&#39;s</title>
+<meta property="og:title" content="Golang 字符串 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">2 min read</span>
+    
+
+
+    <h1 class="article-title">Golang 字符串</h1>
+
+    
+    <span class="article-date">2020-06-04</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      
+<h3 id="早闻golang是utf-8存储的">早闻golang是utf-8存储的 <a href="#%e6%97%a9%e9%97%bbgolang%e6%98%afutf-8%e5%ad%98%e5%82%a8%e7%9a%84">¶</a></h3>
+<p>可<code>utf-8</code>到底是什么，你知道么？过了这么久，我一直不知道什么是<code>utf-8</code>，今天学了一下。</p>
+
+<h4 id="go中如何存储-hello-世界">go中如何存储 <code>hello 世界</code>? <a href="#go%e4%b8%ad%e5%a6%82%e4%bd%95%e5%ad%98%e5%82%a8-hello-%e4%b8%96%e7%95%8c">¶</a></h4>
+<p><code>str := &quot;hello 世界&quot;</code></p>
+<p>我们可以先使用golang打印看看，当然不是平时那么打印，我们需要用到一些fmt的格式化工具包，我们按照unicode、字符串、二进制、十六进制这样来打印看看。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>u := []<span style="color:#fff;font-weight:bold">rune</span>(str)
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">for</span> i := <span style="color:#ff0;font-weight:bold">0</span>; i &lt; <span style="color:#fff;font-weight:bold">len</span>(u); i++ {
+</span></span><span style="display:flex;"><span> fmt.Printf(<span style="color:#0ff;font-weight:bold">&#34;%U %s %#b %#x\n&#34;</span>, u[i], <span style="color:#fff;font-weight:bold">string</span>(u[i]), u[i], u[i])
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>打印前转化成rune字符，打印之后如下</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">006</span><span style="color:#ff0;font-weight:bold">8</span> h <span style="color:#ff0;font-weight:bold">0b1101000</span> <span style="color:#ff0;font-weight:bold">0x68</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">0065</span> e <span style="color:#ff0;font-weight:bold">0b1100101</span> <span style="color:#ff0;font-weight:bold">0x65</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">006</span>C l <span style="color:#ff0;font-weight:bold">0b1101100</span> <span style="color:#ff0;font-weight:bold">0x6c</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">006</span>C l <span style="color:#ff0;font-weight:bold">0b1101100</span> <span style="color:#ff0;font-weight:bold">0x6c</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">006</span>F o <span style="color:#ff0;font-weight:bold">0b1101111</span> <span style="color:#ff0;font-weight:bold">0x6f</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">0020</span>   <span style="color:#ff0;font-weight:bold">0b100000</span> <span style="color:#ff0;font-weight:bold">0x20</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">4E16</span> 世 <span style="color:#ff0;font-weight:bold">0b100111000010110</span> <span style="color:#ff0;font-weight:bold">0x4e16</span>
+</span></span><span style="display:flex;"><span>U+<span style="color:#ff0;font-weight:bold">754</span>C 界 <span style="color:#ff0;font-weight:bold">0b111010101001100</span> <span style="color:#ff0;font-weight:bold">0x754c</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<p>fmt能通过反射帮助我们把东西打印成想要的样子</p>
+<ul>
+<li><code>%U</code> 可以打印成 <code>U+0068</code>这种 <code>unicode</code> 形式</li>
+<li><code>%s</code> 就是普通的字符串打印</li>
+<li><code>%#b</code>可以携带 <code>0b</code> 前导打印二进制字符串</li>
+<li><code>%#x</code> 可以携带 <code>0x</code> 前导打印十六进制字符，当然 <code>%#X</code> 可以以 <code>0X</code> 为前导，打印全大写十六进制字符</li>
+</ul>
+</blockquote>
+<p><strong>可是这些都是我们想要的格式，但是golang是如何存储的呢？</strong></p>
+<p>说到这里我们先来看看 <code>string</code> 是如何在 <code>golang</code> 中存储的。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>src/runtime/<span style="color:#fff;font-weight:bold">string</span>.<span style="color:#fff;font-weight:bold">go</span>: 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> stringStruct <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> str unsafe.Pointer  <span style="color:#007f7f">//str首地址
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> len <span style="color:#fff;font-weight:bold">int</span>             <span style="color:#007f7f">//str长度
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在runtime中找到了对外呈现为<code>string</code>的<code>stringStruct</code></p>
+<blockquote>
+<p>为什么不能修改：看完这个结构你可能会有所感悟，gostring的内容没有在堆栈上，而是存在了.RODATE中</p>
+</blockquote>
+<p>我们整理一下 golang 中的 runtime</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>高地址
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>内核Kernel
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>stack 执行调用栈，和调用参数函数有关的会在这里开辟
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>heap 通过 new/make 创建的内容存在的地方
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>.bss 未初始化数据区（全局变
+</span></span><span style="display:flex;"><span>量未初始化）
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>.data 数据区（全局变量已初始化）
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>.rodata 大数据区（只读）
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>.text 代码区       &lt;- string 也正是存在这里。 
+</span></span><span style="display:flex;"><span>--------
+</span></span><span style="display:flex;"><span>地地址
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>go 中的 string</code> 不像<code>cpp</code>中的那样，有自己的存储空间，而是一个指针指向<code>.rodata</code>数据区。</p>
+<p>因此<code>str[0] =&quot;h&quot;</code>这种做法是不被允许的，可以想象如果多个string共用一个内存，那么对一个的修改当然会让另一个不可预测的修改，因此我们通常只能使用<code>str=&quot;hello&quot;</code>这种方式，让<code>string</code>指向内存中新的位置，原来的<code>string</code>所占用的应该会被<code>gc</code>回收掉掉。</p>
+<p><code>[]byte(string)</code>这个动大家估计都用过，但是其实这个方法会开辟新的内存，我们可以从
+<a href="https://github.com/golang/go/blob/master/src/runtime/string.go#L165" target="_blank" rel="noopener">https://github.com/golang/go/blob/master/src/runtime/string.go#L165</a>
+读取到源代码</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> stringtoslicebyte(buf *tmpBuf, s <span style="color:#fff;font-weight:bold">string</span>) []<span style="color:#fff;font-weight:bold">byte</span> {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">var</span> b []<span style="color:#fff;font-weight:bold">byte</span>
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">if</span> buf != <span style="color:#fff;font-weight:bold">nil</span> &amp;&amp; <span style="color:#fff;font-weight:bold">len</span>(s) &lt;= <span style="color:#fff;font-weight:bold">len</span>(buf) {
+</span></span><span style="display:flex;"><span>  *buf = tmpBuf{}
+</span></span><span style="display:flex;"><span>  b = buf[:<span style="color:#fff;font-weight:bold">len</span>(s)]
+</span></span><span style="display:flex;"><span> } <span style="color:#fff;font-weight:bold">else</span> {
+</span></span><span style="display:flex;"><span>  b = rawbyteslice(<span style="color:#fff;font-weight:bold">len</span>(s))
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">copy</span>(b, s)
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> b
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>你也可以使用一些骚版本，在不分配新内存的情况下直接修改它，使用一些<code>runtime</code>的不安全<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>的方法，</p>
+<p>例如；</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-golang" data-lang="golang"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> s2b(s <span style="color:#fff;font-weight:bold">string</span>) []<span style="color:#fff;font-weight:bold">byte</span> {
+</span></span><span style="display:flex;"><span> sh := (*reflect.StringHeader)(unsafe.Pointer(&amp;s))
+</span></span><span style="display:flex;"><span> bh := reflect.SliceHeader{
+</span></span><span style="display:flex;"><span>  Data: sh.Data,
+</span></span><span style="display:flex;"><span>  Len:  sh.Len,
+</span></span><span style="display:flex;"><span>  Cap:  sh.Len,
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> *(*[]<span style="color:#fff;font-weight:bold">byte</span>)(unsafe.Pointer(&amp;bh))
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><div class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1">
+<p>unsafe 这个包，大概就是比较接近内存的一些操作，容易在程序员不清楚自己在做什么时候造成崩溃。在论坛上有人给他换了个名字叫Believe me，笔者觉得比较形象。&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</div>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+
+</body>
+
+</html>
+
+  
+</main>

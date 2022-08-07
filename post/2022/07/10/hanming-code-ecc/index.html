@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.101.0" />
+
+
+<title>汉明码对数据的纠错&amp;ECC内存 - Dashjay&#39;s</title>
+<meta property="og:title" content="汉明码对数据的纠错&amp;ECC内存 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">1 min read</span>
+    
+
+
+    <h1 class="article-title">汉明码对数据的纠错&amp;ECC内存</h1>
+
+    
+    <span class="article-date">2022-07-10</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      
+<h2 id="0x00">0x00 <a href="#0x00">¶</a></h2>
+<p>在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。</p>
+<p>最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。</p>
+<p>今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。</p>
+<p>今天我们来回顾一下学生知识：</p>
+
+<h2 id="0x01">0x01 <a href="#0x01">¶</a></h2>
+<p>假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位</p>
+<p>假设数据就是 <code>0010 0011 010</code> 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。</p>
+<p>为了方便，我把数据放进表格里，然后打上标志</p>
+<table>
+<thead>
+<tr>
+<th>A0</th>
+<th>A1</th>
+<th>A2</th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A3</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>A8</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>我先说不说 A 相关的比特位的产生规则，我先直接填充上。</p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>1</th>
+<th>0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,</p>
+<p>然后把所有1位置对应的二进制描述全部按顺序列出来</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>0001
+</span></span><span style="display:flex;"><span>0010
+</span></span><span style="display:flex;"><span>0100
+</span></span><span style="display:flex;"><span>0110
+</span></span><span style="display:flex;"><span>1000
+</span></span><span style="display:flex;"><span>1011
+</span></span><span style="display:flex;"><span>1100
+</span></span><span style="display:flex;"><span>1110
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上面这些数位按位异或，就会得到0000,校验就会成功。</p>
+
+<h2 id="0x02">0x02 <a href="#0x02">¶</a></h2>
+<p>书上说这么校验，但是我一直不知道为什么，知道看了茶谈硬件的视频以后才知道。</p>
+<table>
+<thead>
+<tr>
+<th>x</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>A0</td>
+<td>A1</td>
+<td>A2</td>
+<td>0</td>
+</tr>
+<tr>
+<td>A4</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>A8</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>刚才个表格是这样生成的，A1 是用来给</p>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+
+</body>
+
+</html>
+
+  
+</main>

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.101.0" />
+
+
+<title>基于Websocket的消息传输系统 - Dashjay&#39;s</title>
+<meta property="og:title" content="基于Websocket的消息传输系统 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">4 min read</span>
+    
+
+
+    <h1 class="article-title">基于Websocket的消息传输系统</h1>
+
+    
+    <span class="article-date">2019-12-03</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      <p>更新于 2020-12-31</p>
+<p>鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。</p>
+<p>
+<a href="https://link.zhihu.com/?target=https%3A//github.com/name5566/leaf" target="_blank" rel="noopener">leafgithub.com</a>
+</p>
+<p>但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。</p>
+<p>先说一下我的使用场景。我的场景是这样：</p>
+<p>用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。</p>
+
+<h2 id="架构"><strong>架构</strong> <a href="#%e6%9e%b6%e6%9e%84">¶</a></h2>
+<p>我现对整个项目架构描述一下</p>
+<p><p class="md__image" style="display: flex;flex-direction: column;">
+
+    
+    
+    
+    
+    <img src="https://pic3.zhimg.com/80/v2-f064e3332e066c5ec3a41331ffe0e302_hd.jpg" alt="img" >
+   
+    <span style="margin: 0 auto; color: grey; padding-top: 4px"> img </span>
+   
+</p></p>
+<p>先简述一下Hub的设计，总的一个Hub包含Client这样一个map用来储存连接信息，然后每个连接有一个Reader和一个Write来从客户端读取和写入客户端。</p>
+<p>按照图中标志，按实际执行顺序来讲</p>
+<p>①. 客户端向服务端发起Socket连接，（服务器识别到这是Socket连接之后有个Upgrade操作），这里不太明白的可以去看看Socket连接的过程，并不复杂。</p>
+<p>③. Reader收到的第一条消息，是注册消息，一般又客户端OnConnect的时候发送，一般会携带认证信息进行身份认证。</p>
+<p>②. 认证成功之后服务器应该返回用户类似于JWT或者SessionCookie类的东西，或者没有也没关系，因为每次重新创建连接都要认证，我用JWT是为了做访问控制。</p>
+<blockquote>
+<p>如果没有其他异常：就会一直处在①、②、①、②&hellip;&hellip;这样的收发状态。直到&hellip;&hellip;.</p>
+</blockquote>
+<p>④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。</p>
+<p>好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。</p>
+
+<h2 id="实现"><strong>实现</strong> <a href="#%e5%ae%9e%e7%8e%b0">¶</a></h2>
+<p>首先，让我们来看看hub的结构吧，说结构还真的就是结构</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">// 整个项目的交流系统，由clients和各种不同的chan组成，
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">type</span> Hub <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> Clients      <span style="color:#fff;font-weight:bold">map</span>[*Client]<span style="color:#fff;font-weight:bold">bool</span>   <span style="color:#007f7f">// 储存保持连接的用户
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> UserToClient <span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]*Client <span style="color:#007f7f">// 获得用户和其连接的对应关系
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> Message      <span style="color:#fff;font-weight:bold">chan</span> []<span style="color:#fff;font-weight:bold">byte</span>        <span style="color:#007f7f">// 广播消息队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> Register     <span style="color:#fff;font-weight:bold">chan</span> *Client       <span style="color:#007f7f">// 发起注册请求的队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> Unregister   <span style="color:#fff;font-weight:bold">chan</span> *Client       <span style="color:#007f7f">// 断开连接的队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>注释讲的比较清楚了，我中间使用UserToClient这个map来方便找到我们的Client而已，</p>
+<blockquote>
+<p>注意，Client我们存的是指针，因此在这里并没有太多冗余，我只是为了方便找用户，而且不用再遍历。</p>
+</blockquote>
+<p>这里大家有没有注意到一个好玩的东西叫做<code>chan</code> ，这个东西在C/C++里叫做pipe，但是我个人觉得在go里爽的不止那么一点点，有这个东西，我的思路清晰多了。</p>
+<p>Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan <code>ch := make(chan int, 5)</code> 这个管道有点像。</p>
+<p>那么我们在本次项目当中也会使用这种 <code>chan</code> ，功能就是这样：</p>
+<blockquote>
+<p>再补充一个关键词 阻塞（block） 就是当程序执行到 v := &lt;- chan 然后这个 chan 里没东西的时候，程序就会阻塞。那么好我们来看一下怎么用上面的那个Hub的结构。</p>
+</blockquote>
+<p>忘了说，这个Hub是单例，也就是说整个代码里只运行一份。因此一个Hub要写完整个项目的逻辑，那么我就从hub的创建开始</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> NewHub() *Hub {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> &amp;Hub{
+</span></span><span style="display:flex;"><span>  Message:      <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">chan</span> []<span style="color:#fff;font-weight:bold">byte</span>),        <span style="color:#007f7f">// 消息队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  Register:     <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">chan</span> *Client),       <span style="color:#007f7f">// 等待创建连接的用户
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  Unregister:   <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">chan</span> *Client),       <span style="color:#007f7f">// 等待退出断开连接的用户
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  Clients:      <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">map</span>[*Client]<span style="color:#fff;font-weight:bold">bool</span>),   <span style="color:#007f7f">// 客户数组
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  UserToClient: <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]*Client), <span style="color:#007f7f">//建立用户名和客户端唯的唯一通道
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>main函数中运行hub并且run起来</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">// 创建端系统的hub
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> hub := starlight.NewHub()
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 运行hub
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> <span style="color:#fff;font-weight:bold">go</span> hub.Run()
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我的天，我给项目起了个名字，叫星光，太羞耻了。</p>
+<p>当同时操控好几 chan 的时候golang官方推荐一种处理方式使用语句 select，以下案例来自官方。</p>
+<blockquote>
+<p>If one or more of the communications can proceed, a single one that can proceed is chosen via a uniform pseudo-random selection. Otherwise, if there is a default case, that case is chosen. If there is no default case, the &ldquo;select&rdquo; statement blocks until at least one of the communications can proceed.</p>
+</blockquote>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">//select基本用法
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">select</span> {
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">case</span> &lt;- chan1:
+</span></span><span style="display:flex;"><span><span style="color:#007f7f">// 如果chan1成功读到数据，则进行该case处理语句
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">case</span> chan2 &lt;- <span style="color:#ff0;font-weight:bold">1</span>:
+</span></span><span style="display:flex;"><span><span style="color:#007f7f">// 如果成功向chan2写入数据，则进行该case处理语句
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">default</span>:
+</span></span><span style="display:flex;"><span><span style="color:#007f7f">// 如果上面都没有成功，则进入default处理流程
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>这样就如何使用hub就很明朗了，你只需要将自己游戏或者软件里的逻辑每个业务需要使用 chan 的让他循环跑起来，像这样</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">23
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">24
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">25
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">26
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">27
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">28
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">29
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">30
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">31
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">32
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">33
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">// Run 跑起来，完成和用户保持连接，注册，注销用户等功能，控制消息队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">func</span> (h *Hub) Run() {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">select</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">case</span> client := &lt;-h.Register: <span style="color:#007f7f">// 用户创建新的连接
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>   {
+</span></span><span style="display:flex;"><span>    h.Clients[client] = <span style="color:#fff;font-weight:bold">true</span>
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">case</span> client := &lt;-h.Unregister: <span style="color:#007f7f">// 用户断开连接
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>   {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">if</span> _, ok := h.Clients[client]; ok {
+</span></span><span style="display:flex;"><span>     <span style="color:#fff;font-weight:bold">delete</span>(h.Clients, client)
+</span></span><span style="display:flex;"><span>     <span style="color:#fff;font-weight:bold">close</span>(client.Send)
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">delete</span>(h.UserToClient, client.Info.UserID)
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>  <span style="color:#007f7f">// 这个是全局消息 每个人都会收到
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  <span style="color:#fff;font-weight:bold">case</span> message := &lt;-h.Message:
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">for</span> client := <span style="color:#fff;font-weight:bold">range</span> h.Clients {
+</span></span><span style="display:flex;"><span>     <span style="color:#fff;font-weight:bold">select</span> {
+</span></span><span style="display:flex;"><span>     <span style="color:#fff;font-weight:bold">case</span> client.Send &lt;- message:
+</span></span><span style="display:flex;"><span>     <span style="color:#fff;font-weight:bold">default</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#fff;font-weight:bold">close</span>(client.Send)
+</span></span><span style="display:flex;"><span>      <span style="color:#fff;font-weight:bold">delete</span>(h.Clients, client)
+</span></span><span style="display:flex;"><span>     }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>第一个 <code>case client := &lt;- h.Register</code>也就是从注册队列中取一个出来执行注册逻辑，下面是注销逻辑，记得用了哪些东西必须删除，然后下面那个Message是大喇叭，所有客户端都会收到消息，写好这个东西，你的加特林就已经转起来了，虽然还没有一发子弹。</p>
+<p>那我们来看一下简单逻辑。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">// 监听消息
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> http.HandleFunc(<span style="color:#0ff;font-weight:bold">&#34;/ws&#34;</span>, <span style="color:#fff;font-weight:bold">func</span>(w http.ResponseWriter, r *http.Request) {
+</span></span><span style="display:flex;"><span>  wshandler.ServeWs(hub, w, r)
+</span></span><span style="display:flex;"><span> })
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里我使用的是官方http库，如果要使用beego或者iris等框架，应该有对应的 handler。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#007f7f">// serveWs handles websocket requests from the peer.
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span><span style="color:#fff;font-weight:bold">func</span> ServeWs(hub *starlight.Hub, w http.ResponseWriter, r *http.Request) {
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">//完成之后将http请求升级成socket连接
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> conn, err := upgrader.Upgrade(w, r, <span style="color:#fff;font-weight:bold">nil</span>)
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>  log.Println(err)
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 初始化该用户
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> c := &amp;starlight.Client{Hub: hub, Conn: conn, Send: <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">chan</span> []<span style="color:#fff;font-weight:bold">byte</span>, <span style="color:#ff0;font-weight:bold">256</span>)}
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 连接注册
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> hub.Register &lt;- c
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">go</span> c.ReadPump()
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">go</span> c.WritePump()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我用升级这个词可能不太合适，但是官方库的函数名称就叫做 <code>Upgrade</code>，然后中间用到了一个 upgrader 这个是官方写法，应该算是一个中间件，写法如下，大概意思就是 HTTP 遇到 101 code，然后 Golang hijike 将 HTTP 内的 TCP 链接取出来，协议升级到 WebSocket。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">var</span> upgrader = websocket.Upgrader{
+</span></span><span style="display:flex;"><span> ReadBufferSize:  <span style="color:#ff0;font-weight:bold">1024</span>,
+</span></span><span style="display:flex;"><span> WriteBufferSize: <span style="color:#ff0;font-weight:bold">1024</span>,
+</span></span><span style="display:flex;"><span> CheckOrigin:     <span style="color:#fff;font-weight:bold">func</span>(r *http.Request) <span style="color:#fff;font-weight:bold">bool</span> { <span style="color:#fff;font-weight:bold">return</span> <span style="color:#fff;font-weight:bold">true</span> },
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>现在幻想一下，http服务也跑起来了，hub也跑起来了，每一个用户只要请求，服务器的/ws，他发起的Socket连接就会被 upgrade 成一个WebSocket连接，并且被Client持有，他的指针会被推入注册的的队列中，你再会看一下之前的注册逻辑，其实就是把 Client 这个 map 的对应项设置为 true。到现在为止客户端已经可以和用户保持连接了。但是还不能收发数据。根据更前方的框架图主要在<code>go c.ReadPump()</code> 和 <code>go c.WritePump()</code> 这两个函数上，他们在处理，和用户交互的逻辑。 我们一样的进来看看这两个函数怎么写的。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *Client) ReadPump() {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">defer</span> <span style="color:#fff;font-weight:bold">func</span>() {
+</span></span><span style="display:flex;"><span>  c.Hub.Unregister &lt;- c
+</span></span><span style="display:flex;"><span>  _ = c.Conn.Close()
+</span></span><span style="display:flex;"><span> }()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> c.Conn.SetReadLimit(maxMessageSize)
+</span></span><span style="display:flex;"><span> _ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+</span></span><span style="display:flex;"><span> c.Conn.SetPongHandler(<span style="color:#fff;font-weight:bold">func</span>(<span style="color:#fff;font-weight:bold">string</span>) <span style="color:#fff;font-weight:bold">error</span> {
+</span></span><span style="display:flex;"><span>  _ = c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">return</span> <span style="color:#fff;font-weight:bold">nil</span>
+</span></span><span style="display:flex;"><span> })
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 第一个消息就是处理注册
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> <span style="color:#fff;font-weight:bold">if</span> err := c.OnLogin(); err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>  log.Println(err.Error())
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">for</span> { ........
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>无非就是一些配置，然后再循环外面执行OnConnect的操作，我们来看看 Login 咋写的我都快忘了</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *Client) OnLogin() <span style="color:#fff;font-weight:bold">error</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 接收用户的消息头
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> _, message, err := c.Conn.ReadMessage()
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">return</span> err
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span>        <span style="color:#007f7f">// 回复注册
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> c.Send &lt;- message
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我这里没有做什么特殊处理，也就是将用户发过来的消息原封不动发回去就算是成功注册了，但是在业务逻辑当中你可能需要比如，认证用户，并且加入某种权限组之类的操作，一类操作。在这里我就不再详细说。</p>
+<p>你们有没有注意到<code>ReadPump()</code>函数开始写了一段defer</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">defer</span> <span style="color:#fff;font-weight:bold">func</span>() {
+</span></span><span style="display:flex;"><span>  c.Hub.Unregister &lt;- c
+</span></span><span style="display:flex;"><span>  _ = c.Conn.Close()
+</span></span><span style="display:flex;"><span> }()
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这个东西作用就是一旦用户出现任何异常，立马<code>return</code>立马关闭他的连接，防止出现任何异常，你可以写上其他操作，不过一般 注销逻辑都放在hub下面的for select那写了。</p>
+<p>ReadPump后面for循环内的逻辑就比较简单了，</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#007f7f">// 读取消息
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>  _, message, err := c.Conn.ReadMessage()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">if</span> websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+</span></span><span style="display:flex;"><span>    log.Printf(<span style="color:#0ff;font-weight:bold">&#34;error: %v&#34;</span>, err)
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">break</span>
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  mess := Message{}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  err = json.Unmarshal(message, &amp;mess)
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>   fmt.Println(err)
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">continue</span>
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>........
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我还是不全部粘贴了，我的垃圾代码实在是太长了，主要我的业务逻辑比较复杂。</p>
+<p>你会发现这样一个问题，你从c是可以取到这个 client 的标识的，并且可与取到 hub，那么爽的来了，当某 c 说要发消息给另一个 c 的时候，我们就直接粗暴解决问题</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>c.Hub.UserToClient[mess.ToUserID].Send &lt;- res
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>简直爽到不能在爽，你的加特林一直在疯狂转（其实是阻塞的），你只要把消息用 &lt;-这个操作符推进去，消息就会自动通过<code>WritePump</code>发出去。</p>
+<p>那么这个项目算不算完成了，暂时没有，WritePump也看一眼，这个东西是一劳永逸的函数写完一次就不用动了。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">23
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">24
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">25
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">26
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">27
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">28
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">29
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">30
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">31
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">32
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">33
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">34
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">35
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">36
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">37
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">38
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">39
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">40
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">41
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">42
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">43
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *Client) WritePump() {
+</span></span><span style="display:flex;"><span> ticker := time.NewTicker(pingPeriod)
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">defer</span> <span style="color:#fff;font-weight:bold">func</span>() {
+</span></span><span style="display:flex;"><span>  ticker.Stop()
+</span></span><span style="display:flex;"><span>  _ = c.Conn.Close()
+</span></span><span style="display:flex;"><span> }()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#007f7f">// 发送消息的队列
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span> <span style="color:#fff;font-weight:bold">for</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">select</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">case</span> message, ok := &lt;-c.Send:
+</span></span><span style="display:flex;"><span>   _ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">if</span> !ok {
+</span></span><span style="display:flex;"><span>    <span style="color:#007f7f">// The hub closed the channel.
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>    _ = c.Conn.WriteMessage(websocket.CloseMessage, []<span style="color:#fff;font-weight:bold">byte</span>{})
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   <span style="color:#007f7f">// TODO:这里是一个发送内容需要指定的Writer
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>   w, err := c.Conn.NextWriter(websocket.TextMessage)
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">if</span> err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   
+</span></span><span style="display:flex;"><span>   _, _ = w.Write(message)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   n := <span style="color:#fff;font-weight:bold">len</span>(c.Send)
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">for</span> i := <span style="color:#ff0;font-weight:bold">0</span>; i &lt; n; i++ {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    _, _ = w.Write(&lt;-c.Send)
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>   <span style="color:#007f7f">// 差错
+</span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>   <span style="color:#fff;font-weight:bold">if</span> err := w.Close(); err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">case</span> &lt;-ticker.C:
+</span></span><span style="display:flex;"><span>   _ = c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">if</span> err := c.Conn.WriteMessage(websocket.PingMessage, <span style="color:#fff;font-weight:bold">nil</span>); err != <span style="color:#fff;font-weight:bold">nil</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">return</span>
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>再整理一遍，</p>
+<p>1、 初始化一个Hub，并且运行起来</p>
+<p>2、接收用户请求，upgrade成socket连接并且交给hub持有。</p>
+<p>3、运行<code>Readpump()</code>，<code>WritePump()</code>来从客户端读取消息，并且写入消息。</p>
+<p>4、每个队列各司其职，完美解决消息传输业务。</p>
+<p>就酱，最近人在山东，太冷了，冷影响写代码了。</p>
+<p>加油，各位代码狗子们，我已经写了一年半的代码了，进展很快。现在上手什么语言过渡都很快，很适合写垃圾业务逻辑代码，啥时候能给我个清净的研究的时间啊，哎。</p>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+  
+</main>

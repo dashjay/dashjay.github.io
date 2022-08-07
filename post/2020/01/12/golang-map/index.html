@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.101.0" />
+
+
+<title>golang下map的性能分析 - Dashjay&#39;s</title>
+<meta property="og:title" content="golang下map的性能分析 - Dashjay&#39;s">
+
+
+
+
+  
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+
+
+
+
+</head>
+
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
+    
+    <li><a href="/cv">CV</a></li>
+    
+    <li><a href="/daily">我在做什么？</a></li>
+    
+    <li><a href="/open_source">Contribution</a></li>
+    
+  </ul>
+</nav>
+
+    </header>
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">5 min read</span>
+    
+
+
+    <h1 class="article-title">golang下map的性能分析</h1>
+
+    
+    <span class="article-date">2020-01-12</span>
+    
+
+    
+
+    
+
+    <div class="article-content">
+      
+<h2 id="golang-中-map-性能优化低阶">golang 中 map 性能优化[低阶] <a href="#golang-%e4%b8%ad-map-%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e4%bd%8e%e9%98%b6">¶</a></h2>
+
+<h3 id="简单介绍">简单介绍 <a href="#%e7%ae%80%e5%8d%95%e4%bb%8b%e7%bb%8d">¶</a></h3>
+<p>golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。
+为了测试多个 map 的性能我写了个接口 Map</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> Map <span style="color:#fff;font-weight:bold">interface</span> {
+</span></span><span style="display:flex;"><span> Set(key <span style="color:#fff;font-weight:bold">string</span>, val <span style="color:#fff;font-weight:bold">interface</span>{})
+</span></span><span style="display:flex;"><span> Get(key <span style="color:#fff;font-weight:bold">string</span>) (<span style="color:#fff;font-weight:bold">interface</span>{}, <span style="color:#fff;font-weight:bold">bool</span>)
+</span></span><span style="display:flex;"><span> Del(key <span style="color:#fff;font-weight:bold">string</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后这是封装的普通的 map</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> OriginMap <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> m <span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]<span style="color:#fff;font-weight:bold">interface</span>{}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> NewOriginMap() *OriginMap {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> &amp;OriginMap{m: <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]<span style="color:#fff;font-weight:bold">interface</span>{})}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginMap) Get(key <span style="color:#fff;font-weight:bold">string</span>) (<span style="color:#fff;font-weight:bold">interface</span>{}, <span style="color:#fff;font-weight:bold">bool</span>) {
+</span></span><span style="display:flex;"><span> v, ok := o.m[key]
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> v, ok
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginMap) Set(key <span style="color:#fff;font-weight:bold">string</span>, value <span style="color:#fff;font-weight:bold">interface</span>{}) {
+</span></span><span style="display:flex;"><span> o.m[key] = value
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginMap) Del(key <span style="color:#fff;font-weight:bold">string</span>) {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">delete</span>(o.m, key)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>别看一堆代码，其实就是 get 和 set 操作。在这里我们要使用 golang 自带的 test 工具</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> TestOriginMaps(t *testing.T) {
+</span></span><span style="display:flex;"><span> hm := NewOriginMap()
+</span></span><span style="display:flex;"><span> wg := sync.WaitGroup{}
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">for</span> i := <span style="color:#ff0;font-weight:bold">0</span>; i &lt; Writer; i++ {
+</span></span><span style="display:flex;"><span>  wg.Add(<span style="color:#ff0;font-weight:bold">1</span>)
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>(wg *sync.WaitGroup) {
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">for</span> k := <span style="color:#ff0;font-weight:bold">0</span>; k &lt; <span style="color:#ff0;font-weight:bold">100</span>; k++ {
+</span></span><span style="display:flex;"><span>    hm.Set(strconv.Itoa(k), k*k)
+</span></span><span style="display:flex;"><span>    val, _ := hm.Get(strconv.Itoa(k))
+</span></span><span style="display:flex;"><span>    t.Logf(<span style="color:#0ff;font-weight:bold">&#34;Get %d = %d&#34;</span>, k, val)
+</span></span><span style="display:flex;"><span>   }
+</span></span><span style="display:flex;"><span>   wg.Done()
+</span></span><span style="display:flex;"><span>  }(&amp;wg)
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> wg.Wait()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这其中有个变量 Writer 就是写者的数量，如果只有 1 的时候程序能安全运行退出</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">9
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff0;font-weight:bold">1264</span> <span style="color:#f00">±</span> : <span style="color:#fff;font-weight:bold">go</span> test map_test/map_performance_test.<span style="color:#fff;font-weight:bold">go</span> -v           <span style="color:#f00">⏎</span> [<span style="color:#ff0;font-weight:bold">3</span>h1m] <span style="color:#f00">✹</span> <span style="color:#f00">✚</span> <span style="color:#f00">✭</span>
+</span></span><span style="display:flex;"><span>=== RUN   TestOriginMaps
+</span></span><span style="display:flex;"><span>--- PASS: TestOriginMaps (<span style="color:#ff0;font-weight:bold">0.00</span>s)
+</span></span><span style="display:flex;"><span>    map_performance_test.<span style="color:#fff;font-weight:bold">go</span>:<span style="color:#ff0;font-weight:bold">71</span>: Get <span style="color:#ff0;font-weight:bold">0</span> = <span style="color:#ff0;font-weight:bold">0</span>
+</span></span><span style="display:flex;"><span>    map_performance_test.<span style="color:#fff;font-weight:bold">go</span>:<span style="color:#ff0;font-weight:bold">71</span>: Get <span style="color:#ff0;font-weight:bold">1</span> = <span style="color:#ff0;font-weight:bold">1</span>
+</span></span><span style="display:flex;"><span>......
+</span></span><span style="display:flex;"><span>    map_performance_test.<span style="color:#fff;font-weight:bold">go</span>:<span style="color:#ff0;font-weight:bold">71</span>: Get <span style="color:#ff0;font-weight:bold">99</span> = <span style="color:#ff0;font-weight:bold">9801</span>
+</span></span><span style="display:flex;"><span>PASS
+</span></span><span style="display:flex;"><span>ok      command-line-arguments  <span style="color:#ff0;font-weight:bold">0.339</span>s
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>但是一旦我们把 Writer 数量改为 2</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff0;font-weight:bold">1264</span> <span style="color:#f00">±</span> : <span style="color:#fff;font-weight:bold">go</span> test map_test/map_performance_test.<span style="color:#fff;font-weight:bold">go</span> -v             [<span style="color:#ff0;font-weight:bold">3</span>h2m] <span style="color:#f00">✹</span> <span style="color:#f00">✚</span> <span style="color:#f00">✭</span>
+</span></span><span style="display:flex;"><span>=== RUN   TestOriginMaps
+</span></span><span style="display:flex;"><span>fatal <span style="color:#fff;font-weight:bold">error</span>: concurrent <span style="color:#fff;font-weight:bold">map</span> writes
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>goroutine <span style="color:#ff0;font-weight:bold">21</span> [running]:
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>立马就爆炸了。那么？？？？golang 自己官方心理没数么？</p>
+<p>当然有数 golang 开发者其中之一可是拿图灵奖的。你可以点击
+<a href="https://stackoverflow.com/questions/11063473/map-with-concurrent-access" title="stackoverflow这里" target="_blank" rel="noopener">stackoverflow 上的讨论</a>
+和
+<a href="https://github.com/golang/go/issues/21035" title="github 上的讨论" target="_blank" rel="noopener">github 这里</a>
+去查看相关的 issue</p>
+
+<h3 id="sync-map">Sync. Map <a href="#sync-map">¶</a></h3>
+<p>这是某大佬提出的解决方案，我们试试</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> SyncMap <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> m sync.Map
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> NewSyncMap() *SyncMap {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> &amp;SyncMap{}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *SyncMap) Get(key <span style="color:#fff;font-weight:bold">string</span>) (<span style="color:#fff;font-weight:bold">interface</span>{}, <span style="color:#fff;font-weight:bold">bool</span>) {
+</span></span><span style="display:flex;"><span> v, ok := o.m.Load(key)
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> v, ok
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *SyncMap) Set(key <span style="color:#fff;font-weight:bold">string</span>, value <span style="color:#fff;font-weight:bold">interface</span>{}) {
+</span></span><span style="display:flex;"><span> o.m.Store(key, value)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *SyncMap) Del(key <span style="color:#fff;font-weight:bold">string</span>) {
+</span></span><span style="display:flex;"><span> o.m.Delete(key)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我简单封装了一下，测试个性能没啥问题。</p>
+<p>现在把 Write 增加也没问题了，可是真的没问题么？</p>
+<p>我们现在小改一下第一种 map 加了个 RW 锁，然后和这种 map 做一下比较看看？</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">23
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">24
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">25
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">26
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">27
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">28
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">29
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> OriginWithRWLock <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> m <span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]<span style="color:#fff;font-weight:bold">interface</span>{}
+</span></span><span style="display:flex;"><span> l sync.RWMutex
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> NewOriginWithRWLock() *OriginWithRWLock {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> &amp;OriginWithRWLock{
+</span></span><span style="display:flex;"><span>  m: <span style="color:#fff;font-weight:bold">make</span>(<span style="color:#fff;font-weight:bold">map</span>[<span style="color:#fff;font-weight:bold">string</span>]<span style="color:#fff;font-weight:bold">interface</span>{}),
+</span></span><span style="display:flex;"><span>  l: sync.RWMutex{},
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginWithRWLock) Get(key <span style="color:#fff;font-weight:bold">string</span>) (<span style="color:#fff;font-weight:bold">interface</span>{}, <span style="color:#fff;font-weight:bold">bool</span>) {
+</span></span><span style="display:flex;"><span> o.l.RLock()
+</span></span><span style="display:flex;"><span> v, ok := o.m[key]
+</span></span><span style="display:flex;"><span> o.l.RUnlock()
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> v, ok
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginWithRWLock) Set(key <span style="color:#fff;font-weight:bold">string</span>, value <span style="color:#fff;font-weight:bold">interface</span>{}) {
+</span></span><span style="display:flex;"><span> o.l.Lock()
+</span></span><span style="display:flex;"><span> o.m[key] = value
+</span></span><span style="display:flex;"><span> o.l.Unlock()
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (o *OriginWithRWLock) Del(key <span style="color:#fff;font-weight:bold">string</span>) {
+</span></span><span style="display:flex;"><span> o.l.Lock()
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">delete</span>(o.m, key)
+</span></span><span style="display:flex;"><span> o.l.Unlock()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后我们这次用 Test 里的 Benchmark 试试看，为了方便比较，我们写一个函数 benchmarkMap。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">23
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">24
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">25
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">26
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">27
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">28
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">29
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">30
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">31
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">32
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">33
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">34
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">35
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">36
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">37
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">38
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">39
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">40
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> benchmarkMap(b *testing.B, hm Map) {
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">var</span> wg sync.WaitGroup
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">for</span> i := <span style="color:#ff0;font-weight:bold">0</span>; i &lt; b.N; i++ {
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">for</span> j := <span style="color:#ff0;font-weight:bold">0</span>; j &lt; Writer; j++ {
+</span></span><span style="display:flex;"><span>   wg.Add(<span style="color:#ff0;font-weight:bold">1</span>)
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">for</span> k := <span style="color:#ff0;font-weight:bold">0</span>; k &lt; <span style="color:#ff0;font-weight:bold">100</span>; k++ {
+</span></span><span style="display:flex;"><span>     hm.Set(strconv.Itoa(k), k*k)
+</span></span><span style="display:flex;"><span>     hm.Set(strconv.Itoa(k), k*k)
+</span></span><span style="display:flex;"><span>     hm.Del(strconv.Itoa(k))
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    wg.Done()
+</span></span><span style="display:flex;"><span>   }()
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#fff;font-weight:bold">for</span> j := <span style="color:#ff0;font-weight:bold">0</span>; j &lt; Reader; j++ {
+</span></span><span style="display:flex;"><span>   wg.Add(<span style="color:#ff0;font-weight:bold">1</span>)
+</span></span><span style="display:flex;"><span>   <span style="color:#fff;font-weight:bold">go</span> <span style="color:#fff;font-weight:bold">func</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#fff;font-weight:bold">for</span> k := <span style="color:#ff0;font-weight:bold">0</span>; k &lt; <span style="color:#ff0;font-weight:bold">100</span>; k++ {
+</span></span><span style="display:flex;"><span>     hm.Get(strconv.Itoa(k))
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    wg.Done()
+</span></span><span style="display:flex;"><span>   }()
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span> }
+</span></span><span style="display:flex;"><span> wg.Wait()
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> BenchmarkMaps(b *testing.B) {
+</span></span><span style="display:flex;"><span> b.Logf(<span style="color:#0ff;font-weight:bold">&#34;Writer: %d,Reader: %d&#34;</span>, Writer, Reader)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> b.Run(<span style="color:#0ff;font-weight:bold">&#34;SyncMap&#34;</span>, <span style="color:#fff;font-weight:bold">func</span>(b *testing.B) {
+</span></span><span style="display:flex;"><span>  hm := NewSyncMap()
+</span></span><span style="display:flex;"><span>  benchmarkMap(b, hm)
+</span></span><span style="display:flex;"><span> })
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> b.Run(<span style="color:#0ff;font-weight:bold">&#34;map with RWLock&#34;</span>, <span style="color:#fff;font-weight:bold">func</span>(b *testing.B) {
+</span></span><span style="display:flex;"><span>  hm := NewOriginWithRWLock()
+</span></span><span style="display:flex;"><span>  benchmarkMap(b, hm)
+</span></span><span style="display:flex;"><span> })
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>首先是 BenchMark 的函数当使用</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">go</span> test .... -bench=. -benchmem
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>的时候会被调用，然后来测试两种 Map 性能，上面那个是测试性能的函数，分别对两个函数的进行测试~~拭目以待</p>
+<blockquote>
+<p>当两者都是 100 的时候</p>
+</blockquote>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">go</span> test test_map/map_test.<span style="color:#fff;font-weight:bold">go</span>  -v -bench=. -benchmem                                                                                                                         [<span style="color:#ff0;font-weight:bold">14</span>:<span style="color:#ff0;font-weight:bold">12</span>:<span style="color:#ff0;font-weight:bold">59</span>]
+</span></span><span style="display:flex;"><span>goos: darwin
+</span></span><span style="display:flex;"><span>goarch: amd64
+</span></span><span style="display:flex;"><span>BenchmarkMaps
+</span></span><span style="display:flex;"><span>    map_test.<span style="color:#fff;font-weight:bold">go</span>:<span style="color:#ff0;font-weight:bold">73</span>: Writer: <span style="color:#ff0;font-weight:bold">100</span>,Reader: <span style="color:#ff0;font-weight:bold">100</span>
+</span></span><span style="display:flex;"><span>BenchmarkMaps/SyncMap
+</span></span><span style="display:flex;"><span>BenchmarkMaps/SyncMap-<span style="color:#ff0;font-weight:bold">8</span>                       <span style="color:#ff0;font-weight:bold">80</span>          <span style="color:#ff0;font-weight:bold">13374265</span> ns/op         <span style="color:#ff0;font-weight:bold">1710981</span> B/op      <span style="color:#ff0;font-weight:bold">80867</span> allocs/op
+</span></span><span style="display:flex;"><span>BenchmarkMaps/map_with_RWLock
+</span></span><span style="display:flex;"><span>BenchmarkMaps/map_with_RWLock-<span style="color:#ff0;font-weight:bold">8</span>              <span style="color:#ff0;font-weight:bold">100</span>          <span style="color:#ff0;font-weight:bold">12572631</span> ns/op          <span style="color:#ff0;font-weight:bold">155019</span> B/op      <span style="color:#ff0;font-weight:bold">16951</span> allocs/op
+</span></span><span style="display:flex;"><span>PASS
+</span></span><span style="display:flex;"><span>ok      command-line-arguments  <span style="color:#ff0;font-weight:bold">3.323</span>s
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>基本上 SyncMap 的整体性能是优于 mapWithRWLock 的我来分析一下为什么</p>
+<p>从古至今，人们一直在时间和空间上做斗争，这次也不例外，两种锁的实现原理不一样。</p>
+<!-- raw HTML omitted -->
+<p>当我们使用普通 Map 带 RWMutex 会将整块内存锁住，然后其他请求就要等待。
+SyncMap 是如何实现的呢？</p>
+<!-- raw HTML omitted -->
+<p>它分为两块内存（存的都是指针），一块只读区域，一块 Dirty 区域支持读写。</p>
+<p>两边的指针指向原数据，当需要 Get 的时候他会执行 <strong>Load</strong> 操作从 Read 中去获取指针指向的值，如果没有找到（ <strong>miss</strong> ）发生了，就转而会去 dirty 中获得数据并且存入 Read 中。</p>
+<p>当 <strong>miss</strong> 超过一定数量的时候，他就会用原子操作把 dirty 的数据 Promote 到 ReadOnly 中。</p>
+<p>因此 Sync 这种机制，往往只适用于 Key-Value 相对稳定的业务情况，读多写少的业务。</p>
+<blockquote>
+<p>手痒想写个内存的看看到底多花多少内存
+go tool pprof 是一个工具可以查看代码测评产生的内存日志</p>
+</blockquote>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">go</span> test map_test/map_performance_test.<span style="color:#fff;font-weight:bold">go</span> -bench=. -memprofile=mem.prof
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">go</span> tool pprof <span style="color:#fff;font-weight:bold">map</span>.test mem.prof
+</span></span><span style="display:flex;"><span>(pprof)top
+</span></span><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span>      flat  flat%   sum%        cum   cum%
+</span></span><span style="display:flex;"><span>    <span style="color:#ff0;font-weight:bold">1.54</span>GB <span style="color:#ff0;font-weight:bold">57.95</span>% <span style="color:#ff0;font-weight:bold">57.95</span>%     <span style="color:#ff0;font-weight:bold">1.57</span>GB <span style="color:#ff0;font-weight:bold">59.14</span>%  command-line-arguments_test.benchmarkMap.func2
+</span></span><span style="display:flex;"><span>    <span style="color:#ff0;font-weight:bold">0.43</span>GB <span style="color:#ff0;font-weight:bold">16.22</span>% <span style="color:#ff0;font-weight:bold">74.17</span>%     <span style="color:#ff0;font-weight:bold">0.69</span>GB <span style="color:#ff0;font-weight:bold">25.94</span>%  command-line-arguments_test.benchmarkMap.func1
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>不用说了这看起来三倍的内存消耗，果然越快内存越大。那么？本次测评到此结束？</p>
+<p>！！！ 并没有！！！
+还有一个大佬写了个 concurrent-map 甚叼，我们来观摩一波。
+<a href="https://github.com/orcaman/concurrent-map" title="concurrent-map" target="_blank" rel="noopener">concurrent-map</a>
+</p>
+<p>立马封装一波</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">type</span> ConCurrentMap <span style="color:#fff;font-weight:bold">struct</span> {
+</span></span><span style="display:flex;"><span> m cmap.ConcurrentMap
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> NewConCurrentMap() *ConCurrentMap {
+</span></span><span style="display:flex;"><span> conMap := cmap.New()
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> &amp;ConCurrentMap{m: conMap}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *ConCurrentMap) Get(key <span style="color:#fff;font-weight:bold">string</span>) (<span style="color:#fff;font-weight:bold">interface</span>{}, <span style="color:#fff;font-weight:bold">bool</span>) {
+</span></span><span style="display:flex;"><span> v, ok := c.m.Get(key)
+</span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">return</span> v, ok
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *ConCurrentMap) Set(key <span style="color:#fff;font-weight:bold">string</span>, value <span style="color:#fff;font-weight:bold">interface</span>{}) {
+</span></span><span style="display:flex;"><span> c.m.Set(key, value)
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> (c *ConCurrentMap) Del(key <span style="color:#fff;font-weight:bold">string</span>) {
+</span></span><span style="display:flex;"><span> c.m.Remove(key)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>迫不及待开始测试，当 Write=100，Reader=100 的时候</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>go <span style="color:#fff;font-weight:bold">test</span> test_map/map_test.go  -v -bench=. -benchmem                                                                                                                         [14:24:48]
+</span></span><span style="display:flex;"><span>goos: darwin
+</span></span><span style="display:flex;"><span>goarch: amd64
+</span></span><span style="display:flex;"><span>BenchmarkMaps
+</span></span><span style="display:flex;"><span>    map_test.go:73: Writer: 1000,Reader: <span style="color:#ff0;font-weight:bold">1000</span>
+</span></span><span style="display:flex;"><span>BenchmarkMaps/SyncMap
+</span></span><span style="display:flex;"><span>BenchmarkMaps/SyncMap-8                        <span style="color:#ff0;font-weight:bold">8</span>         <span style="color:#ff0;font-weight:bold">129847762</span> ns/op        <span style="color:#ff0;font-weight:bold">16410356</span> B/op     <span style="color:#ff0;font-weight:bold">785167</span> allocs/op
+</span></span><span style="display:flex;"><span>BenchmarkMaps/map_with_RWLock
+</span></span><span style="display:flex;"><span>BenchmarkMaps/map_with_RWLock-8               <span style="color:#ff0;font-weight:bold">10</span>         <span style="color:#ff0;font-weight:bold">117275854</span> ns/op         <span style="color:#ff0;font-weight:bold">1723905</span> B/op     <span style="color:#ff0;font-weight:bold">169971</span> allocs/op
+</span></span><span style="display:flex;"><span>BenchmarkMaps/CMap
+</span></span><span style="display:flex;"><span>BenchmarkMaps/CMap-8                          <span style="color:#ff0;font-weight:bold">69</span>          <span style="color:#ff0;font-weight:bold">27681675</span> ns/op         <span style="color:#ff0;font-weight:bold">1786702</span> B/op     <span style="color:#ff0;font-weight:bold">169936</span> allocs/op
+</span></span><span style="display:flex;"><span>PASS
+</span></span><span style="display:flex;"><span>ok      command-line-arguments  4.424s
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>那么我同样做个表格吧，把读写的几种情况都列出来</p>
+<table>
+<thead>
+<tr>
+<th>R/W</th>
+<th>SyncMap</th>
+<th>map_with_RWLock</th>
+<th>CMap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100/100</td>
+<td><code>13657466</code></td>
+<td><code>12122735</code></td>
+<td><code>1946771</code></td>
+</tr>
+<tr>
+<td>10/100</td>
+<td><code>4040595</code></td>
+<td><code>11031799</code></td>
+<td><code>1770506</code></td>
+</tr>
+<tr>
+<td>100/10</td>
+<td><code>1696194</code></td>
+<td><code>1916231</code></td>
+<td><code>360180</code></td>
+</tr>
+</tbody>
+</table>
+<p>最后说一下这个并发读map是怎么搞的</p>
+<!-- raw HTML omitted -->
+<p>左边是普通的map，当有读写的时候锁上了，其他线程就无法读写了。右边的是 <strong>concurrentMap</strong> ，他利用了一种 <strong>partition</strong> 的思想，把 <strong>Map</strong> 的内存 <strong>SHARD</strong> （分割）成N份，然后用不同的🔐锁上锁，那么降低了需要资源被锁的概率。</p>
+<p>我们在日常中编程的时候容易陷入一种误区，就是这锁，那锁，全锁上，面试也在问各种锁，但是在真实QPS比价高的业务中，锁是一种很可怕的东西，如果能在编程的时候好好想想写出 **LockFree`的程序是最好的啊。</p>
+<p>我是北京某211的混子，从19年10月开始写两行golang到现在不知不觉已经过去了2个月，上手就开始拉框架写代码的我已经进化到开始分析性能，然后优化代码啦，如果有小伙伴想一起讨论讨论，欢迎。</p>
+
+    </div>
+
+
+  </article>
+
+
+  
+
+
+  <footer class="footer">
+  <ul class="footer-links">
+    <li>
+      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+    </li>
+    <li>
+      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
+          alt="Img link to Hugo website" width="22" height="22"></a>
+    </li>
+  </ul>
+</footer>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+  
+</main>
