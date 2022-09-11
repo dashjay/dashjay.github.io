@@ -1,94 +1,252 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='创建于 2020-07-31，最终修订于 2020-08-06
+在之前的课程(二)中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：
+今天的任务是 &amp;ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog 中
+Let&amp;rsquo;s do it
+0x1 为什么要载入配置文件 众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如：
+程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。 平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。 当遇到这些内容修改时，我们是不希望再编译一遍的。
+而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。
+我推荐使用 TOML 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。
+经过一些选择之后我找到一个库，叫 cpptoml
+0x2 cpptoml A header-only library for parsing TOML configuration files.
+安装 1 2 3 git clone https://github.com/toml-lang/toml.git cd toml; mkdir build; cd build cmake .. &amp;amp;&amp;amp; make &amp;amp;&amp;amp; make install 看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？ 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。
+小尝试 本次的所有代码都基于上次课程的开始。
+1 2 3 4 5 6 7 8 9 10 11 12 #include&amp;lt;iostream&amp;gt; #include &amp;#34;cxxhttp.'><title>手动用cpp实现http(三)</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/08/03/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%89/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='手动用cpp实现http(三)'>
+<meta property='og:description' content='创建于 2020-07-31，最终修订于 2020-08-06
+在之前的课程(二)中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：
+今天的任务是 &amp;ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog 中
+Let&amp;rsquo;s do it
+0x1 为什么要载入配置文件 众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如：
+程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。 平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。 当遇到这些内容修改时，我们是不希望再编译一遍的。
+而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。
+我推荐使用 TOML 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。
+经过一些选择之后我找到一个库，叫 cpptoml
+0x2 cpptoml A header-only library for parsing TOML configuration files.
+安装 1 2 3 git clone https://github.com/toml-lang/toml.git cd toml; mkdir build; cd build cmake .. &amp;amp;&amp;amp; make &amp;amp;&amp;amp; make install 看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？ 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。
+小尝试 本次的所有代码都基于上次课程的开始。
+1 2 3 4 5 6 7 8 9 10 11 12 #include&amp;lt;iostream&amp;gt; #include &amp;#34;cxxhttp.'>
+<meta property='og:url' content='/post/2020/08/03/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%89/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="手动用cpp实现http(三)">
+<meta name="twitter:description" content="创建于 2020-07-31，最终修订于 2020-08-06
+在之前的课程(二)中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：
+今天的任务是 &amp;ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog 中
+Let&amp;rsquo;s do it
+0x1 为什么要载入配置文件 众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如：
+程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。 平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。 当遇到这些内容修改时，我们是不希望再编译一遍的。
+而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。
+我推荐使用 TOML 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。
+经过一些选择之后我找到一个库，叫 cpptoml
+0x2 cpptoml A header-only library for parsing TOML configuration files.
+安装 1 2 3 git clone https://github.com/toml-lang/toml.git cd toml; mkdir build; cd build cmake .. &amp;amp;&amp;amp; make &amp;amp;&amp;amp; make install 看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？ 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。
+小尝试 本次的所有代码都基于上次课程的开始。
+1 2 3 4 5 6 7 8 9 10 11 12 #include&amp;lt;iostream&amp;gt; #include &amp;#34;cxxhttp.">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>手动用cpp实现http(三) - Dashjay&#39;s</title>
-<meta property="og:title" content="手动用cpp实现http(三) - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/08/03/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%89/">手动用cpp实现http(三)</a>
+        </h2>
     
-    <span class="article-duration">2 min read</span>
-    
-
-
-    <h1 class="article-title">手动用cpp实现http(三)</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-08-03</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Aug 03, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    2 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>创建于 2020-07-31，最终修订于 2020-08-06</p>
-<p>在之前的
-<a href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response" target="_blank" rel="noopener">课程(二)</a>
-中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：</p>
+    
+    <p>创建于 2020-07-31，最终修订于 2020-08-06</p>
+<p>在之前的<a class="link" href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response"  target="_blank" rel="noopener"
+    >课程(二)</a>中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容：</p>
 <p>今天的任务是 &ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&rdquo;。</p>
-<p>所有的代码都在 
-<a href="https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog" target="_blank" rel="noopener">https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog</a>
- 中</p>
+<p>所有的代码都在 <a class="link" href="https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog"  target="_blank" rel="noopener"
+    >https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog</a> 中</p>
 <p>Let&rsquo;s do it</p>
-
-<h2 id="0x1-为什么要载入配置文件">0x1 为什么要载入配置文件 <a href="#0x1-%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e8%bd%bd%e5%85%a5%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6">¶</a></h2>
+<h2 id="0x1-为什么要载入配置文件">0x1 为什么要载入配置文件</h2>
 <p>众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如：</p>
 <ul>
 <li>程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。</li>
@@ -96,17 +254,13 @@
 </ul>
 <p>当遇到这些内容修改时，我们是不希望再编译一遍的。</p>
 <p>而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。</p>
-<p>我推荐使用 
-<a href="https://github.com/toml-lang/toml" target="_blank" rel="noopener">TOML</a>
- 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。</p>
-<p>经过一些选择之后我找到一个库，叫 
-<a href="https://github.com/skystrife/cpptoml" target="_blank" rel="noopener">cpptoml</a>
-</p>
-
-<h2 id="0x2-cpptoml">0x2 cpptoml <a href="#0x2-cpptoml">¶</a></h2>
+<p>我推荐使用 <a class="link" href="https://github.com/toml-lang/toml"  target="_blank" rel="noopener"
+    >TOML</a> 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。</p>
+<p>经过一些选择之后我找到一个库，叫 <a class="link" href="https://github.com/skystrife/cpptoml"  target="_blank" rel="noopener"
+    >cpptoml</a></p>
+<h2 id="0x2-cpptoml">0x2 cpptoml</h2>
 <p><code>A header-only library for parsing TOML configuration files.</code></p>
-
-<h3 id="安装">安装 <a href="#%e5%ae%89%e8%a3%85">¶</a></h3>
+<h3 id="安装">安装</h3>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -123,11 +277,9 @@
 <p>看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？
 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。</p>
 </blockquote>
-
-<h3 id="小尝试">小尝试 <a href="#%e5%b0%8f%e5%b0%9d%e8%af%95">¶</a></h3>
-<p>本次的所有代码都基于
-<a href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response" target="_blank" rel="noopener">上次课程</a>
-的开始。</p>
+<h3 id="小尝试">小尝试</h3>
+<p>本次的所有代码都基于<a class="link" href="https://github.com/dashjay/http_demo/tree/master/2-http-request-response"  target="_blank" rel="noopener"
+    >上次课程</a>的开始。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -244,23 +396,20 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>我们可以看到，返回的对象被重载了 <code>bool()</code>, <code>*</code>, <code>-&gt;</code> 三种操作符：分别可以得到， <strong>对象是否为空</strong>，<strong>对象的引用</strong>，<strong>指向对象的指针</strong>三个值。</p>
-
-<h2 id="0x3-为什么不使用stdcout或stdcerr-来输出日志">0x3 为什么不使用std::cout或std::cerr 来输出日志 <a href="#0x3-%e4%b8%ba%e4%bb%80%e4%b9%88%e4%b8%8d%e4%bd%bf%e7%94%a8stdcout%e6%88%96stdcerr-%e6%9d%a5%e8%be%93%e5%87%ba%e6%97%a5%e5%bf%97">¶</a></h2>
+<h2 id="0x3-为什么不使用stdcout或stdcerr-来输出日志">0x3 为什么不使用std::cout或std::cerr 来输出日志</h2>
 <p>输出到标准输出和标准错误的日志，会因为多线程的原因，产生一些堆叠，在这里我就不进行演示了，你可以想象，100个线程毫无避讳的使用 <code>std::cout &lt;&lt; ...</code> 时，会产生大量重叠，丢失，的情况。</p>
 <p>虽然使用log程序会产生一些锁的开销，但是目前看来是值得的：</p>
 <ul>
 <li>帮助我们debug，有不同的颜色，层级来标注</li>
 <li>不会因为多线程的使用而错乱<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup></li>
 </ul>
-
-<h2 id="0x4-spdlog">0x4 spdlog <a href="#0x4-spdlog">¶</a></h2>
+<h2 id="0x4-spdlog">0x4 spdlog</h2>
 <blockquote>
 <p>Very fast, header-only/compiled, C++ logging library.</p>
 </blockquote>
 <p>在搜索查询了不少 log 库，诸如什么 log4cpp 之类的，发现他们都比较臃肿，有的还需要单独的配置文件，没有这个库容易使用。</p>
-<p>
-<a href="https://github.com/gabime/spdlog" target="_blank" rel="noopener">spdlog</a>
-</p>
+<p><a class="link" href="https://github.com/gabime/spdlog"  target="_blank" rel="noopener"
+    >spdlog</a></p>
 <p>安装什么的应该不用我说吧，它有cmake，和之前的操作一样即可。这个也是一个纯header的库，无需链接。</p>
 <p>写了一些代码修改之后的主文件如下</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -323,37 +472,151 @@
 </ol>
 </div>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
-<script src="/js/math-code.js"></script>
-<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
+    
+    <div class="pswp__scroll-wrap">
 
-</body>
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
 
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

@@ -1,94 +1,234 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='创建于 2020-08-06，完成于 2020-08-07
+在之前的课程(四)中我们讲了有关如何套用 socket 实现 bufReader，并在此基础上读取 http 请求和返回值。
+今天的任务是 &amp;ldquo;[易]实现主程序逻辑，监听端口，接收请求&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/5-main-work 中
+Let&amp;rsquo;s do it
+0x1 多线程编程 作者对多线程编程了解不是很多，基本上就是在此场景下够用而已。
+multi_thread
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 #include &amp;lt;iostream&amp;gt; #include &amp;lt;thread&amp;gt; void thread_sleep(int second) { std::this_thread::sleep_for(std::chrono::seconds(second)); std::cout &amp;lt;&amp;lt; &amp;#34;thread exit&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } int main() { std::thread thr(thread_sleep, 5); thr.join(); std::thread thr2(thread_sleep, 999); thr2.detach(); std::cout &amp;lt;&amp;lt; &amp;#34;program exit directly&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 注意几个点：'><title>手动用cpp实现http(五)</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/08/06/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%BA%94/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='手动用cpp实现http(五)'>
+<meta property='og:description' content='创建于 2020-08-06，完成于 2020-08-07
+在之前的课程(四)中我们讲了有关如何套用 socket 实现 bufReader，并在此基础上读取 http 请求和返回值。
+今天的任务是 &amp;ldquo;[易]实现主程序逻辑，监听端口，接收请求&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/5-main-work 中
+Let&amp;rsquo;s do it
+0x1 多线程编程 作者对多线程编程了解不是很多，基本上就是在此场景下够用而已。
+multi_thread
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 #include &amp;lt;iostream&amp;gt; #include &amp;lt;thread&amp;gt; void thread_sleep(int second) { std::this_thread::sleep_for(std::chrono::seconds(second)); std::cout &amp;lt;&amp;lt; &amp;#34;thread exit&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } int main() { std::thread thr(thread_sleep, 5); thr.join(); std::thread thr2(thread_sleep, 999); thr2.detach(); std::cout &amp;lt;&amp;lt; &amp;#34;program exit directly&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 注意几个点：'>
+<meta property='og:url' content='/post/2020/08/06/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%BA%94/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-06T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="手动用cpp实现http(五)">
+<meta name="twitter:description" content="创建于 2020-08-06，完成于 2020-08-07
+在之前的课程(四)中我们讲了有关如何套用 socket 实现 bufReader，并在此基础上读取 http 请求和返回值。
+今天的任务是 &amp;ldquo;[易]实现主程序逻辑，监听端口，接收请求&amp;rdquo;。
+所有的代码都在 https://github.com/dashjay/http_demo/tree/5-main-work 中
+Let&amp;rsquo;s do it
+0x1 多线程编程 作者对多线程编程了解不是很多，基本上就是在此场景下够用而已。
+multi_thread
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 #include &amp;lt;iostream&amp;gt; #include &amp;lt;thread&amp;gt; void thread_sleep(int second) { std::this_thread::sleep_for(std::chrono::seconds(second)); std::cout &amp;lt;&amp;lt; &amp;#34;thread exit&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } int main() { std::thread thr(thread_sleep, 5); thr.join(); std::thread thr2(thread_sleep, 999); thr2.detach(); std::cout &amp;lt;&amp;lt; &amp;#34;program exit directly&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 注意几个点：">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>手动用cpp实现http(五) - Dashjay&#39;s</title>
-<meta property="og:title" content="手动用cpp实现http(五) - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/08/06/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%BA%94/">手动用cpp实现http(五)</a>
+        </h2>
     
-    <span class="article-duration">4 min read</span>
-    
-
-
-    <h1 class="article-title">手动用cpp实现http(五)</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-08-06</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Aug 06, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    4 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>创建于 2020-08-06，完成于 2020-08-07</p>
-<p>在之前的
-<a href="https://github.com/dashjay/http_demo/tree/master/4-bufreader" target="_blank" rel="noopener">课程(四)</a>
-中我们讲了有关如何套用 socket 实现 bufReader，并在此基础上读取 http 请求和返回值。</p>
+    
+    <p>创建于 2020-08-06，完成于 2020-08-07</p>
+<p>在之前的<a class="link" href="https://github.com/dashjay/http_demo/tree/master/4-bufreader"  target="_blank" rel="noopener"
+    >课程(四)</a>中我们讲了有关如何套用 socket 实现 bufReader，并在此基础上读取 http 请求和返回值。</p>
 <p>今天的任务是 &ldquo;[易]实现主程序逻辑，监听端口，接收请求&rdquo;。</p>
-<p>所有的代码都在 
-<a href="https://github.com/dashjay/http_demo/tree/5-main-work" target="_blank" rel="noopener">https://github.com/dashjay/http_demo/tree/5-main-work</a>
- 中</p>
+<p>所有的代码都在 <a class="link" href="https://github.com/dashjay/http_demo/tree/5-main-work"  target="_blank" rel="noopener"
+    >https://github.com/dashjay/http_demo/tree/5-main-work</a> 中</p>
 <p>Let&rsquo;s do it</p>
-
-<h2 id="0x1-多线程编程">0x1 多线程编程 <a href="#0x1-%e5%a4%9a%e7%ba%bf%e7%a8%8b%e7%bc%96%e7%a8%8b">¶</a></h2>
+<h2 id="0x1-多线程编程">0x1 多线程编程</h2>
 <p>作者对多线程编程了解不是很多，基本上就是在此场景下够用而已。</p>
 <p><code>multi_thread</code></p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -141,8 +281,7 @@
 </li>
 </ol>
 <p>更多的内容我也不知道了，这些知识都是从python库那边迁移过来的，更多请查询百科。</p>
-
-<h2 id="0x2-匿名函数">0x2 匿名函数 <a href="#0x2-%e5%8c%bf%e5%90%8d%e5%87%bd%e6%95%b0">¶</a></h2>
+<h2 id="0x2-匿名函数">0x2 匿名函数</h2>
 <p>我说这是和函数你信不？</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -212,8 +351,7 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>这种lambda表达式通常是创建然后被执行，基本不存储下来，可以称为一次性函数了。</p>
-
-<h3 id="捕获列表">捕获列表 <a href="#%e6%8d%95%e8%8e%b7%e5%88%97%e8%a1%a8">¶</a></h3>
+<h3 id="捕获列表">捕获列表</h3>
 <p>前面的捕获列表，可以捕获当前作用域内的变量，通过拷贝或者引用两种方式。
 如果使用的是拷贝捕获，你不能修改那个捕获变量，你可以认为他是一个 r-value，始终是一个临时值。</p>
 <p>如果你用的是引用捕获，你可以修改它。</p>
@@ -249,8 +387,7 @@
 </span></span><span style="display:flex;"><span>std::cout &lt;&lt; <span style="color:#0ff;font-weight:bold">&#34;res3: &#34;</span> &lt;&lt; res3 &lt;&lt; <span style="color:#0ff;font-weight:bold">&#39;\n&#39;</span>;
 </span></span></code></pre></td></tr></table>
 </div>
-</div>
-<h3 id="lambda的使用场景">lambda的使用场景 <a href="#lambda%e7%9a%84%e4%bd%bf%e7%94%a8%e5%9c%ba%e6%99%af">¶</a></h3>
+</div><h3 id="lambda的使用场景">lambda的使用场景</h3>
 <p>我一直很想不通，cpp 为什么没有split这个函数，经过很长时间的实践之后发现一小部分原因是不知道返回什么内容比较好。可以有以下方案：</p>
 <ul>
 <li>返回一个 <code>std::vector&lt;std::string&gt;</code></li>
@@ -324,8 +461,7 @@
 </div>
 </div><p>其中 <code>std::function&lt;void(std::string, std::string)&gt;</code> 代表无返回值，传入两个 <code>std::string</code></p>
 <p>有了这个利器，我已经知道咱们的handler怎么写了，你们呢？</p>
-
-<h2 id="0x3-http-handler">0x3 HTTP handler <a href="#0x3-http-handler">¶</a></h2>
+<h2 id="0x3-http-handler">0x3 HTTP handler</h2>
 <p>不知道从什么时候开始，http server 流行使用 <code>handler</code> 这种编写模式。</p>
 <p>也就是根据路由，为HTTP请求添加handler。</p>
 <p>例如 <code>add_handler(std::string, std::function&lt;bool(Request &amp;)&gt;)</code> 这样来给对应路由添加一个处理函数。</p>
@@ -554,44 +690,157 @@
 </div>
 </div><p>十秒打了80万个请求过去，错误有200多个，怀疑是 bufReader 的问题。</p>
 <p>你完成了之前的代码了么？</p>
-
-<h2 id="0x4-拓展">0x4 拓展 <a href="#0x4-%e6%8b%93%e5%b1%95">¶</a></h2>
+<h2 id="0x4-拓展">0x4 拓展</h2>
 <p>到这里已经到达我的能力水平的极限了，我也不知道能给你什么拓展意见了。</p>
 <p>这个教程之后的更新基本上会保持，但是不会那么频繁了，无非就是更新一些 HTTP 特殊情况之下的处理。例如 Upgrade status 101 升级到 socket.io 等等类似的内容。</p>
 <p>我建议你好好阅读以下RFC，并且定义一份头文件，有关各种各样的 HTTP status_code 和文字描述，常见头部，特殊头部等等。</p>
 <p>再见小伙伴们。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
-<script src="/js/math-code.js"></script>
-<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
+    
+    <div class="pswp__scroll-wrap">
 
-</body>
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
 
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

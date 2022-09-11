@@ -1,84 +1,224 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='赋值运算符 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。
+1 C1 &amp;amp;operator=(const C1 &amp;amp;c); 我发现如果一旦当赋值操作涉及内存操作，如动态内存的开辟和释放，并且不小心使用了 A=A 这种操作时，就会引发严重的后果，例如：
+1 2 3 4 5 6 7 8 9 10 11 C1 &amp;amp;C1::operator=(const C1 &amp;amp;c){ if(data) delete[] data; length = c.length; data = new char[c.length]; for(int i{0};i &amp;lt; c.length; &#43;&#43;i){ data[i] = c.data[i]; } return *this; } v1 = v1 // 出现这种语句会引发严重后果 所以一般都需要自检（检查即将assign的这个值）是否已经是自己，本身。
+1 2 3 if (this == &amp;amp;c){ return *this; } 在赋值重载的过程中，应该要有一个这样的检查，因为a=a赋值，本身最好的情况就是整个代码逻辑没有什么变化，行为也不会发生变换；最坏的情况就是程序直接崩溃，一旦我们读取已经释放的内存，就会引发非常严重的后果。
+做一个这样检查是非常快，不会消耗什么资源的。
+一般一个类写出来都会有复制构造，但是有时候往往我们不需要这种复制构造（可能引发严重的后果），有的类包含一些特殊的类似于锁等，必须由开发者专门编写深拷贝函数，我们可以通过手动显式申明来禁用他。
+1 C1(const C1 &amp;amp;copy) = delete; 今天要说的就是这点的东西，以前在学习过程中忽略了很多东西，但是就是这些东西，往往会让我们踩坑，这种东西又急不来，只能写点文章记录一下，过程。'><title>cpp的赋值运算符重载</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/06/26/cpp%E7%9A%84%E8%B5%8B%E5%80%BC%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='cpp的赋值运算符重载'>
+<meta property='og:description' content='赋值运算符 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。
+1 C1 &amp;amp;operator=(const C1 &amp;amp;c); 我发现如果一旦当赋值操作涉及内存操作，如动态内存的开辟和释放，并且不小心使用了 A=A 这种操作时，就会引发严重的后果，例如：
+1 2 3 4 5 6 7 8 9 10 11 C1 &amp;amp;C1::operator=(const C1 &amp;amp;c){ if(data) delete[] data; length = c.length; data = new char[c.length]; for(int i{0};i &amp;lt; c.length; &#43;&#43;i){ data[i] = c.data[i]; } return *this; } v1 = v1 // 出现这种语句会引发严重后果 所以一般都需要自检（检查即将assign的这个值）是否已经是自己，本身。
+1 2 3 if (this == &amp;amp;c){ return *this; } 在赋值重载的过程中，应该要有一个这样的检查，因为a=a赋值，本身最好的情况就是整个代码逻辑没有什么变化，行为也不会发生变换；最坏的情况就是程序直接崩溃，一旦我们读取已经释放的内存，就会引发非常严重的后果。
+做一个这样检查是非常快，不会消耗什么资源的。
+一般一个类写出来都会有复制构造，但是有时候往往我们不需要这种复制构造（可能引发严重的后果），有的类包含一些特殊的类似于锁等，必须由开发者专门编写深拷贝函数，我们可以通过手动显式申明来禁用他。
+1 C1(const C1 &amp;amp;copy) = delete; 今天要说的就是这点的东西，以前在学习过程中忽略了很多东西，但是就是这些东西，往往会让我们踩坑，这种东西又急不来，只能写点文章记录一下，过程。'>
+<meta property='og:url' content='/post/2020/06/26/cpp%E7%9A%84%E8%B5%8B%E5%80%BC%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-26T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="cpp的赋值运算符重载">
+<meta name="twitter:description" content="赋值运算符 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。
+1 C1 &amp;amp;operator=(const C1 &amp;amp;c); 我发现如果一旦当赋值操作涉及内存操作，如动态内存的开辟和释放，并且不小心使用了 A=A 这种操作时，就会引发严重的后果，例如：
+1 2 3 4 5 6 7 8 9 10 11 C1 &amp;amp;C1::operator=(const C1 &amp;amp;c){ if(data) delete[] data; length = c.length; data = new char[c.length]; for(int i{0};i &amp;lt; c.length; &#43;&#43;i){ data[i] = c.data[i]; } return *this; } v1 = v1 // 出现这种语句会引发严重后果 所以一般都需要自检（检查即将assign的这个值）是否已经是自己，本身。
+1 2 3 if (this == &amp;amp;c){ return *this; } 在赋值重载的过程中，应该要有一个这样的检查，因为a=a赋值，本身最好的情况就是整个代码逻辑没有什么变化，行为也不会发生变换；最坏的情况就是程序直接崩溃，一旦我们读取已经释放的内存，就会引发非常严重的后果。
+做一个这样检查是非常快，不会消耗什么资源的。
+一般一个类写出来都会有复制构造，但是有时候往往我们不需要这种复制构造（可能引发严重的后果），有的类包含一些特殊的类似于锁等，必须由开发者专门编写深拷贝函数，我们可以通过手动显式申明来禁用他。
+1 C1(const C1 &amp;amp;copy) = delete; 今天要说的就是这点的东西，以前在学习过程中忽略了很多东西，但是就是这些东西，往往会让我们踩坑，这种东西又急不来，只能写点文章记录一下，过程。">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>cpp的赋值运算符重载 - Dashjay&#39;s</title>
-<meta property="og:title" content="cpp的赋值运算符重载 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/06/26/cpp%E7%9A%84%E8%B5%8B%E5%80%BC%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD/">cpp的赋值运算符重载</a>
+        </h2>
     
-    <span class="article-duration">1 min read</span>
-    
-
-
-    <h1 class="article-title">cpp的赋值运算符重载</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-06-26</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jun 26, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    1 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p><strong>赋值运算符</strong> 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。</p>
+    
+    <p><strong>赋值运算符</strong> 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -142,34 +282,151 @@
 </div>
 </div><p>今天要说的就是这点的东西，以前在学习过程中忽略了很多东西，但是就是这些东西，往往会让我们踩坑，这种东西又急不来，只能写点文章记录一下，过程。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
-</body>
+    
+    <div class="pswp__scroll-wrap">
 
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

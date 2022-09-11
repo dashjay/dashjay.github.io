@@ -1,89 +1,224 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='选择产品：Radare2取证工具
+工具介绍 Radare是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&amp;hellip;&amp;hellip;..下面贴一下man手册中r2的描述
+1 2 3 4 5 6 RADARE2(1) BSD General Commands Manual RADARE2(1) NAME radare2 -- Advanced commandline hexadecimal editor, disassembler and debugger 功能测试 众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。
+这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。
+rax2 &amp;mdash;&amp;mdash;&amp;mdash;&amp;gt; 用于数值转换 1 2 $rax2 -s 414141 AAAA% 看下man手册介绍
+1 2 3 4 5 6 7 8 9 RAX2(1) BSD General Commands Manual RAX2(1) NAME rax2 -- radare base converter DESCRIPTION This command is part of the radare project. This command allows you to convert values between positive and negative integer, float, octal, binary and hexadecimal values.'><title>Radare 的使用</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2019/12/11/use-of-radare/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='Radare 的使用'>
+<meta property='og:description' content='选择产品：Radare2取证工具
+工具介绍 Radare是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&amp;hellip;&amp;hellip;..下面贴一下man手册中r2的描述
+1 2 3 4 5 6 RADARE2(1) BSD General Commands Manual RADARE2(1) NAME radare2 -- Advanced commandline hexadecimal editor, disassembler and debugger 功能测试 众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。
+这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。
+rax2 &amp;mdash;&amp;mdash;&amp;mdash;&amp;gt; 用于数值转换 1 2 $rax2 -s 414141 AAAA% 看下man手册介绍
+1 2 3 4 5 6 7 8 9 RAX2(1) BSD General Commands Manual RAX2(1) NAME rax2 -- radare base converter DESCRIPTION This command is part of the radare project. This command allows you to convert values between positive and negative integer, float, octal, binary and hexadecimal values.'>
+<meta property='og:url' content='/post/2019/12/11/use-of-radare/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-11T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="Radare 的使用">
+<meta name="twitter:description" content="选择产品：Radare2取证工具
+工具介绍 Radare是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&amp;hellip;&amp;hellip;..下面贴一下man手册中r2的描述
+1 2 3 4 5 6 RADARE2(1) BSD General Commands Manual RADARE2(1) NAME radare2 -- Advanced commandline hexadecimal editor, disassembler and debugger 功能测试 众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。
+这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。
+rax2 &amp;mdash;&amp;mdash;&amp;mdash;&amp;gt; 用于数值转换 1 2 $rax2 -s 414141 AAAA% 看下man手册介绍
+1 2 3 4 5 6 7 8 9 RAX2(1) BSD General Commands Manual RAX2(1) NAME rax2 -- radare base converter DESCRIPTION This command is part of the radare project. This command allows you to convert values between positive and negative integer, float, octal, binary and hexadecimal values.">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>Radare 的使用 - Dashjay&#39;s</title>
-<meta property="og:title" content="Radare 的使用 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2019/12/11/use-of-radare/">Radare 的使用</a>
+        </h2>
     
-    <span class="article-duration">5 min read</span>
-    
-
-
-    <h1 class="article-title">Radare 的使用</h1>
+        
+    </div>
 
     
-    <span class="article-date">2019-12-11</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Dec 11, 2019</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    5 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>选择产品：Radare2取证工具</p>
-
-<h4 id="工具介绍">工具介绍 <a href="#%e5%b7%a5%e5%85%b7%e4%bb%8b%e7%bb%8d">¶</a></h4>
-<p>
-<a href="https://github.com/radare/radare2" target="_blank" rel="noopener"><strong>Radare</strong></a>
-是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&hellip;&hellip;..下面贴一下man手册中r2的描述</p>
+    
+    <p>选择产品：Radare2取证工具</p>
+<h4 id="工具介绍">工具介绍</h4>
+<p><a class="link" href="https://github.com/radare/radare2"  target="_blank" rel="noopener"
+    ><strong>Radare</strong></a>是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&hellip;&hellip;..下面贴一下man手册中r2的描述</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -102,12 +237,10 @@
 </span></span><span style="display:flex;"><span>     debugger
 </span></span></code></pre></td></tr></table>
 </div>
-</div>
-<h4 id="功能测试">功能测试 <a href="#%e5%8a%9f%e8%83%bd%e6%b5%8b%e8%af%95">¶</a></h4>
+</div><h4 id="功能测试">功能测试</h4>
 <p>众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。</p>
 <p>这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。</p>
-
-<h5 id="rax2-----------用于数值转换">rax2 &mdash;&mdash;&mdash;&gt; 用于数值转换 <a href="#rax2-----------%e7%94%a8%e4%ba%8e%e6%95%b0%e5%80%bc%e8%bd%ac%e6%8d%a2">¶</a></h5>
+<h5 id="rax2-----------用于数值转换">rax2 &mdash;&mdash;&mdash;&gt; 用于数值转换</h5>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -144,10 +277,8 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>这个小工具可以正负，整数，浮点数，十进制，二进制，十六进制等之间相互转换。</p>
-
-<h5 id="rasm2---------反汇编和汇编">rasm2 &mdash;&mdash;-&gt; 反汇编和汇编 <a href="#rasm2---------%e5%8f%8d%e6%b1%87%e7%bc%96%e5%92%8c%e6%b1%87%e7%bc%96">¶</a></h5>
-
-<h5 id="rabin2---------查看文件格式其实我就只是用来看字符串">rabin2 &mdash;&mdash;-&gt; 查看文件格式(其实我就只是用来看字符串) <a href="#rabin2---------%e6%9f%a5%e7%9c%8b%e6%96%87%e4%bb%b6%e6%a0%bc%e5%bc%8f%e5%85%b6%e5%ae%9e%e6%88%91%e5%b0%b1%e5%8f%aa%e6%98%af%e7%94%a8%e6%9d%a5%e7%9c%8b%e5%ad%97%e7%ac%a6%e4%b8%b2">¶</a></h5>
+<h5 id="rasm2---------反汇编和汇编">rasm2 &mdash;&mdash;-&gt; 反汇编和汇编</h5>
+<h5 id="rabin2---------查看文件格式其实我就只是用来看字符串">rabin2 &mdash;&mdash;-&gt; 查看文件格式(其实我就只是用来看字符串)</h5>
 <p>有时候用这种方法可以快速获得flag，我说的是签到题。</p>
 <p>以下是使用命令查看二进制文件中的字符串</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -168,12 +299,9 @@
 </span></span><span style="display:flex;"><span><span style="color:#ff0;font-weight:bold">026</span> 0x00000fa1 0x100000fa1  <span style="color:#ff0;font-weight:bold">14</span>  <span style="color:#ff0;font-weight:bold">15</span> (3.__TEXT.__cstring) ascii child <span style="color:#fff;font-weight:bold">complete</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div>
-<h5 id="radiff2--------对文件进行-diff">radiff2 &mdash;&mdash;&gt; 对文件进行 diff <a href="#radiff2--------%e5%af%b9%e6%96%87%e4%bb%b6%e8%bf%9b%e8%a1%8c-diff">¶</a></h5>
-
-<h5 id="ragg2ragg2cc--------用于更方便的生成shellcode">ragg2/ragg2?cc &mdash;&mdash;&gt; 用于更方便的生成shellcode <a href="#ragg2ragg2cc--------%e7%94%a8%e4%ba%8e%e6%9b%b4%e6%96%b9%e4%be%bf%e7%9a%84%e7%94%9f%e6%88%90shellcode">¶</a></h5>
-
-<h5 id="rahash2--------各种密码算法-hash算法">rahash2 &mdash;&mdash;&gt; 各种密码算法， hash算法 <a href="#rahash2--------%e5%90%84%e7%a7%8d%e5%af%86%e7%a0%81%e7%ae%97%e6%b3%95-hash%e7%ae%97%e6%b3%95">¶</a></h5>
+</div><h5 id="radiff2--------对文件进行-diff">radiff2 &mdash;&mdash;&gt; 对文件进行 diff</h5>
+<h5 id="ragg2ragg2cc--------用于更方便的生成shellcode">ragg2/ragg2?cc &mdash;&mdash;&gt; 用于更方便的生成shellcode</h5>
+<h5 id="rahash2--------各种密码算法-hash算法">rahash2 &mdash;&mdash;&gt; 各种密码算法， hash算法</h5>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -185,8 +313,7 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>以上工具都是他附带的一些工具，最主要的程序叫做Radare2，是一个反汇编，的静态分析的神器。使用这个工具的原因一方面是自己能力不足，另一方面是CTF做题真的是来不及，使用这个程序可以大大的提高我在做题的时候的的速度和正确性</p>
-
-<h3 id="radare2">Radare2 <a href="#radare2">¶</a></h3>
+<h3 id="radare2">Radare2</h3>
 <p>为了展示这个程序的厉害我从网上看到了一个小实验，上一段代码</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -584,37 +711,151 @@
 </div>
 </div><p>那么一次利用radare2的一次缓冲区溢出漏洞利用就完成了。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
-<script src="/js/math-code.js"></script>
-<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
+    
+    <div class="pswp__scroll-wrap">
 
-</body>
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
 
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

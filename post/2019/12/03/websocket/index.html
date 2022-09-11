@@ -1,105 +1,293 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='更新于 2020-12-31
+鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。
+leafgithub.com
+但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。
+先说一下我的使用场景。我的场景是这样：
+用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。
+架构 我现对整个项目架构描述一下
+先简述一下Hub的设计，总的一个Hub包含Client这样一个map用来储存连接信息，然后每个连接有一个Reader和一个Write来从客户端读取和写入客户端。
+按照图中标志，按实际执行顺序来讲
+①. 客户端向服务端发起Socket连接，（服务器识别到这是Socket连接之后有个Upgrade操作），这里不太明白的可以去看看Socket连接的过程，并不复杂。
+③. Reader收到的第一条消息，是注册消息，一般又客户端OnConnect的时候发送，一般会携带认证信息进行身份认证。
+②. 认证成功之后服务器应该返回用户类似于JWT或者SessionCookie类的东西，或者没有也没关系，因为每次重新创建连接都要认证，我用JWT是为了做访问控制。
+如果没有其他异常：就会一直处在①、②、①、②&amp;hellip;&amp;hellip;这样的收发状态。直到&amp;hellip;&amp;hellip;.
+④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。
+好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。
+实现 首先，让我们来看看hub的结构吧，说结构还真的就是结构
+1 2 3 4 5 6 7 8 // 整个项目的交流系统，由clients和各种不同的chan组成， type Hub struct { Clients map[*Client]bool // 储存保持连接的用户 UserToClient map[string]*Client // 获得用户和其连接的对应关系 Message chan []byte // 广播消息队列 Register chan *Client // 发起注册请求的队列 Unregister chan *Client // 断开连接的队列 } 注释讲的比较清楚了，我中间使用UserToClient这个map来方便找到我们的Client而已，
+注意，Client我们存的是指针，因此在这里并没有太多冗余，我只是为了方便找用户，而且不用再遍历。
+这里大家有没有注意到一个好玩的东西叫做chan ，这个东西在C/C&#43;&#43;里叫做pipe，但是我个人觉得在go里爽的不止那么一点点，有这个东西，我的思路清晰多了。
+Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan ch := make(chan int, 5) 这个管道有点像。'><title>基于Websocket的消息传输系统</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2019/12/03/websocket/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='基于Websocket的消息传输系统'>
+<meta property='og:description' content='更新于 2020-12-31
+鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。
+leafgithub.com
+但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。
+先说一下我的使用场景。我的场景是这样：
+用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。
+架构 我现对整个项目架构描述一下
+先简述一下Hub的设计，总的一个Hub包含Client这样一个map用来储存连接信息，然后每个连接有一个Reader和一个Write来从客户端读取和写入客户端。
+按照图中标志，按实际执行顺序来讲
+①. 客户端向服务端发起Socket连接，（服务器识别到这是Socket连接之后有个Upgrade操作），这里不太明白的可以去看看Socket连接的过程，并不复杂。
+③. Reader收到的第一条消息，是注册消息，一般又客户端OnConnect的时候发送，一般会携带认证信息进行身份认证。
+②. 认证成功之后服务器应该返回用户类似于JWT或者SessionCookie类的东西，或者没有也没关系，因为每次重新创建连接都要认证，我用JWT是为了做访问控制。
+如果没有其他异常：就会一直处在①、②、①、②&amp;hellip;&amp;hellip;这样的收发状态。直到&amp;hellip;&amp;hellip;.
+④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。
+好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。
+实现 首先，让我们来看看hub的结构吧，说结构还真的就是结构
+1 2 3 4 5 6 7 8 // 整个项目的交流系统，由clients和各种不同的chan组成， type Hub struct { Clients map[*Client]bool // 储存保持连接的用户 UserToClient map[string]*Client // 获得用户和其连接的对应关系 Message chan []byte // 广播消息队列 Register chan *Client // 发起注册请求的队列 Unregister chan *Client // 断开连接的队列 } 注释讲的比较清楚了，我中间使用UserToClient这个map来方便找到我们的Client而已，
+注意，Client我们存的是指针，因此在这里并没有太多冗余，我只是为了方便找用户，而且不用再遍历。
+这里大家有没有注意到一个好玩的东西叫做chan ，这个东西在C/C&#43;&#43;里叫做pipe，但是我个人觉得在go里爽的不止那么一点点，有这个东西，我的思路清晰多了。
+Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan ch := make(chan int, 5) 这个管道有点像。'>
+<meta property='og:url' content='/post/2019/12/03/websocket/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="基于Websocket的消息传输系统">
+<meta name="twitter:description" content="更新于 2020-12-31
+鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。
+leafgithub.com
+但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。
+先说一下我的使用场景。我的场景是这样：
+用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。
+架构 我现对整个项目架构描述一下
+先简述一下Hub的设计，总的一个Hub包含Client这样一个map用来储存连接信息，然后每个连接有一个Reader和一个Write来从客户端读取和写入客户端。
+按照图中标志，按实际执行顺序来讲
+①. 客户端向服务端发起Socket连接，（服务器识别到这是Socket连接之后有个Upgrade操作），这里不太明白的可以去看看Socket连接的过程，并不复杂。
+③. Reader收到的第一条消息，是注册消息，一般又客户端OnConnect的时候发送，一般会携带认证信息进行身份认证。
+②. 认证成功之后服务器应该返回用户类似于JWT或者SessionCookie类的东西，或者没有也没关系，因为每次重新创建连接都要认证，我用JWT是为了做访问控制。
+如果没有其他异常：就会一直处在①、②、①、②&amp;hellip;&amp;hellip;这样的收发状态。直到&amp;hellip;&amp;hellip;.
+④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。
+好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。
+实现 首先，让我们来看看hub的结构吧，说结构还真的就是结构
+1 2 3 4 5 6 7 8 // 整个项目的交流系统，由clients和各种不同的chan组成， type Hub struct { Clients map[*Client]bool // 储存保持连接的用户 UserToClient map[string]*Client // 获得用户和其连接的对应关系 Message chan []byte // 广播消息队列 Register chan *Client // 发起注册请求的队列 Unregister chan *Client // 断开连接的队列 } 注释讲的比较清楚了，我中间使用UserToClient这个map来方便找到我们的Client而已，
+注意，Client我们存的是指针，因此在这里并没有太多冗余，我只是为了方便找用户，而且不用再遍历。
+这里大家有没有注意到一个好玩的东西叫做chan ，这个东西在C/C&#43;&#43;里叫做pipe，但是我个人觉得在go里爽的不止那么一点点，有这个东西，我的思路清晰多了。
+Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan ch := make(chan int, 5) 这个管道有点像。">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>基于Websocket的消息传输系统 - Dashjay&#39;s</title>
-<meta property="og:title" content="基于Websocket的消息传输系统 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
-
+    <header class="article-category">
+        
+            <a href="/categories/golang/" >
+                golang
+            </a>
+        
+            <a href="/categories/websokcet/" >
+                Websokcet
+            </a>
+        
     </header>
-
-<main class="content" role="main">
-
-  <article class="article">
-    
-    <span class="article-duration">4 min read</span>
     
 
-
-    <h1 class="article-title">基于Websocket的消息传输系统</h1>
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2019/12/03/websocket/">基于Websocket的消息传输系统</a>
+        </h2>
+    
+        
+    </div>
 
     
-    <span class="article-date">2019-12-03</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Dec 03, 2019</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    4 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>更新于 2020-12-31</p>
+    
+    <p>更新于 2020-12-31</p>
 <p>鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。</p>
-<p>
-<a href="https://link.zhihu.com/?target=https%3A//github.com/name5566/leaf" target="_blank" rel="noopener">leafgithub.com</a>
-</p>
+<p><a class="link" href="https://link.zhihu.com/?target=https%3A//github.com/name5566/leaf"  target="_blank" rel="noopener"
+    >leafgithub.com</a></p>
 <p>但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。</p>
 <p>先说一下我的使用场景。我的场景是这样：</p>
 <p>用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。</p>
-
-<h2 id="架构"><strong>架构</strong> <a href="#%e6%9e%b6%e6%9e%84">¶</a></h2>
+<h2 id="架构"><strong>架构</strong></h2>
 <p>我现对整个项目架构描述一下</p>
-<p><p class="md__image" style="display: flex;flex-direction: column;">
-
-    
-    
-    
-    
-    <img src="https://pic3.zhimg.com/80/v2-f064e3332e066c5ec3a41331ffe0e302_hd.jpg" alt="img" >
-   
-    <span style="margin: 0 auto; color: grey; padding-top: 4px"> img </span>
-   
-</p></p>
+<p><img src="https://pic3.zhimg.com/80/v2-f064e3332e066c5ec3a41331ffe0e302_hd.jpg"
+	
+	
+	
+	loading="lazy"
+	
+		alt="img"
+	
+	
+></p>
 <p>先简述一下Hub的设计，总的一个Hub包含Client这样一个map用来储存连接信息，然后每个连接有一个Reader和一个Write来从客户端读取和写入客户端。</p>
 <p>按照图中标志，按实际执行顺序来讲</p>
 <p>①. 客户端向服务端发起Socket连接，（服务器识别到这是Socket连接之后有个Upgrade操作），这里不太明白的可以去看看Socket连接的过程，并不复杂。</p>
@@ -110,8 +298,7 @@
 </blockquote>
 <p>④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。</p>
 <p>好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。</p>
-
-<h2 id="实现"><strong>实现</strong> <a href="#%e5%ae%9e%e7%8e%b0">¶</a></h2>
+<h2 id="实现"><strong>实现</strong></h2>
 <p>首先，让我们来看看hub的结构吧，说结构还真的就是结构</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -605,34 +792,151 @@
 <p>就酱，最近人在山东，太冷了，冷影响写代码了。</p>
 <p>加油，各位代码狗子们，我已经写了一年半的代码了，进展很快。现在上手什么语言过渡都很快，很适合写垃圾业务逻辑代码，啥时候能给我个清净的研究的时间啊，哎。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
-</body>
+    
+    <div class="pswp__scroll-wrap">
 
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

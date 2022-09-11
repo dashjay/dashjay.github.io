@@ -1,84 +1,257 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='我的毕业论文由何杰老师指导，在这次论文编写过程中，我对非代码类工作产生了新的看法。
+记录一下我是如何体会到的。
+我的题目是公司的领导帮我定的，公司的需求是写一个 Operator ，想把这个写成论文其实很难：
+框架打好了 controller-manager ，自己写的部分非常有限制。 Opeartor 在项目中用来部署一个复杂系统，但是论文又只能限制在 Operator 范围内，写不了太多有关系统的东西，底层的容器、网络甚至选举都本来不应该拿出来写。 工程化的项目，比较难写出学术论文的感受。 所以我开始写论文的时候，是非常被动，以凑字数为目标。
+摘要里写了一大堆没用的背景介绍，自己做的内容非常少而且不精准的随便说了说，因为我觉得这个东西应该不会有人看，应该只是一个过场。
+中期何杰老师帮我看开题报告和中期答辩相关内容的时候，几乎是把我写的内容删干净了，每句话都重新组织了一遍，我那时才稍微对这类“写文”的工作，有那么一丝钦佩。后期我迷迷糊糊的写到了2万多字，其实说难听点，就是把拉出来的稀重新摆成佳肴的样子，通过了查重，几乎是觉得自己马上就能毕业了。
+10 号就答辩了，我 8 号去找何老师给我签字，顺便拿着 PPT 进行了预答辩。答辩到一半的时候，何杰老师严肃的说：“你这个不行”，然后对着我的摘要和目录就是一顿乱画，我那时候已经迷糊了，内容都没看怎么能把标题划掉呢，但是我没说，我只是灰溜溜的走了，马上骑摩托回出租房（宿舍晚上会断电），然后开始写，摘要重新写了一遍，2、3、4大段整个剪切出来，1万多字就没了。然后一边粘贴一边写，过程就不说了，睡了4个小时，9号清晨8点赶回学校，交了我的论文给何杰老师，他说可以了，让我去签字。
+答辩完交终稿前，何杰老师又让我重新去了一次，他把我的摘要又删了重新写了一次，经过多次修改后，我的摘要发生了变化：
+原版摘要：
+随着技术的发展，计算机的运算速度飞速提升，这使得许多原本不可能完成的计算任务，在GPU高速算力的加持下，得到了结果。GPU逐渐成为在科学计算的主流。随后NVIDIA推出了CUDA（统一计算设备架构）通用并行计算架构提供了非常易用的GPU开发工具，基于GPU的云计算平台也不再是一个新概念，一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。想要进行类似的规模化AI生产，除了高度依赖GPU的算力本身之外，还需要平台具有调度能力，提供根据优先级抢占调度实现集群算力的共享。
+平台本身的开发是非常重要，但是平台搭建与维护，软件升级与回滚，数据的备份与恢复这些工作，往往需要持续数年甚至数十年之久，并且这些操作繁琐而且容易出错。本课题设计并实现了一套自动部署工具，能够实现 GPU 云计算服务平台的部署与后期维护等相关工作。本设计使用了一主多从的工作模式，自动地将产品部署到集群中，同时负责产品的升级、回滚、备份、恢复等功能。实现了该项目的智能运维自动化。
+本文介绍了工具在设计，开发过程中所使用的技术和具体的实现细节。在测试部署过程中，相比人力手动部署，本工具显著提升了部署效率，杜绝了任何出错的可能性。
+摘要最终版：
+GPU逐渐成为科学计算的主流。同时一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。平台本身的开发是十分重要的，但是平台搭建与维护，软件的升级与回滚，数据的备份与恢复这些工作，往往需要大量的人工操作而且容易出错，从而影响平台的稳定性和运行维护效率。
+本课题设计并实现了一套自动部署运维工具。本工具基于声明式API实现了：（1）GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署；（2）GPU云计算服务平台系统软件的自动升级、回滚、备份等运维功能。此外，本工具通过一主多从的工作模式，实现了部署和运维过程在意外中断情况下的自动恢复功能。
+本文介绍了工具的系统架构，开发过程中所使用的设计模式以及开发技术和具体的实现细节。通过测试验证了自动部署和自动运维功能的正确性，评估了系统的可靠性、伸缩性、可扩展性。通过与传统的手动部署和手动运维进行时间开销对比，评价了本工具在典型部署和运维任务上的效率提升程度。
+何杰老师最后回答了我一个问题：“你是如何把问题描述的如此清楚的？”，他思考了一会儿，然后总结道
+（1）首先是分点，按点来叙述； （2）其次是对要描述的内容起名字，并且添加定语帮助理解，如：GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署，使用定语和名词将这个事情描述清楚，如果描述不清楚再加辅助描述。 （3）需要长时间的有意识的锻炼，写东西的时候需要咬文嚼字。'><title>毕业论文的感受</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2021/06/14/experience-about-graduation-thesis/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='毕业论文的感受'>
+<meta property='og:description' content='我的毕业论文由何杰老师指导，在这次论文编写过程中，我对非代码类工作产生了新的看法。
+记录一下我是如何体会到的。
+我的题目是公司的领导帮我定的，公司的需求是写一个 Operator ，想把这个写成论文其实很难：
+框架打好了 controller-manager ，自己写的部分非常有限制。 Opeartor 在项目中用来部署一个复杂系统，但是论文又只能限制在 Operator 范围内，写不了太多有关系统的东西，底层的容器、网络甚至选举都本来不应该拿出来写。 工程化的项目，比较难写出学术论文的感受。 所以我开始写论文的时候，是非常被动，以凑字数为目标。
+摘要里写了一大堆没用的背景介绍，自己做的内容非常少而且不精准的随便说了说，因为我觉得这个东西应该不会有人看，应该只是一个过场。
+中期何杰老师帮我看开题报告和中期答辩相关内容的时候，几乎是把我写的内容删干净了，每句话都重新组织了一遍，我那时才稍微对这类“写文”的工作，有那么一丝钦佩。后期我迷迷糊糊的写到了2万多字，其实说难听点，就是把拉出来的稀重新摆成佳肴的样子，通过了查重，几乎是觉得自己马上就能毕业了。
+10 号就答辩了，我 8 号去找何老师给我签字，顺便拿着 PPT 进行了预答辩。答辩到一半的时候，何杰老师严肃的说：“你这个不行”，然后对着我的摘要和目录就是一顿乱画，我那时候已经迷糊了，内容都没看怎么能把标题划掉呢，但是我没说，我只是灰溜溜的走了，马上骑摩托回出租房（宿舍晚上会断电），然后开始写，摘要重新写了一遍，2、3、4大段整个剪切出来，1万多字就没了。然后一边粘贴一边写，过程就不说了，睡了4个小时，9号清晨8点赶回学校，交了我的论文给何杰老师，他说可以了，让我去签字。
+答辩完交终稿前，何杰老师又让我重新去了一次，他把我的摘要又删了重新写了一次，经过多次修改后，我的摘要发生了变化：
+原版摘要：
+随着技术的发展，计算机的运算速度飞速提升，这使得许多原本不可能完成的计算任务，在GPU高速算力的加持下，得到了结果。GPU逐渐成为在科学计算的主流。随后NVIDIA推出了CUDA（统一计算设备架构）通用并行计算架构提供了非常易用的GPU开发工具，基于GPU的云计算平台也不再是一个新概念，一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。想要进行类似的规模化AI生产，除了高度依赖GPU的算力本身之外，还需要平台具有调度能力，提供根据优先级抢占调度实现集群算力的共享。
+平台本身的开发是非常重要，但是平台搭建与维护，软件升级与回滚，数据的备份与恢复这些工作，往往需要持续数年甚至数十年之久，并且这些操作繁琐而且容易出错。本课题设计并实现了一套自动部署工具，能够实现 GPU 云计算服务平台的部署与后期维护等相关工作。本设计使用了一主多从的工作模式，自动地将产品部署到集群中，同时负责产品的升级、回滚、备份、恢复等功能。实现了该项目的智能运维自动化。
+本文介绍了工具在设计，开发过程中所使用的技术和具体的实现细节。在测试部署过程中，相比人力手动部署，本工具显著提升了部署效率，杜绝了任何出错的可能性。
+摘要最终版：
+GPU逐渐成为科学计算的主流。同时一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。平台本身的开发是十分重要的，但是平台搭建与维护，软件的升级与回滚，数据的备份与恢复这些工作，往往需要大量的人工操作而且容易出错，从而影响平台的稳定性和运行维护效率。
+本课题设计并实现了一套自动部署运维工具。本工具基于声明式API实现了：（1）GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署；（2）GPU云计算服务平台系统软件的自动升级、回滚、备份等运维功能。此外，本工具通过一主多从的工作模式，实现了部署和运维过程在意外中断情况下的自动恢复功能。
+本文介绍了工具的系统架构，开发过程中所使用的设计模式以及开发技术和具体的实现细节。通过测试验证了自动部署和自动运维功能的正确性，评估了系统的可靠性、伸缩性、可扩展性。通过与传统的手动部署和手动运维进行时间开销对比，评价了本工具在典型部署和运维任务上的效率提升程度。
+何杰老师最后回答了我一个问题：“你是如何把问题描述的如此清楚的？”，他思考了一会儿，然后总结道
+（1）首先是分点，按点来叙述； （2）其次是对要描述的内容起名字，并且添加定语帮助理解，如：GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署，使用定语和名词将这个事情描述清楚，如果描述不清楚再加辅助描述。 （3）需要长时间的有意识的锻炼，写东西的时候需要咬文嚼字。'>
+<meta property='og:url' content='/post/2021/06/14/experience-about-graduation-thesis/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2021-06-14T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="毕业论文的感受">
+<meta name="twitter:description" content="我的毕业论文由何杰老师指导，在这次论文编写过程中，我对非代码类工作产生了新的看法。
+记录一下我是如何体会到的。
+我的题目是公司的领导帮我定的，公司的需求是写一个 Operator ，想把这个写成论文其实很难：
+框架打好了 controller-manager ，自己写的部分非常有限制。 Opeartor 在项目中用来部署一个复杂系统，但是论文又只能限制在 Operator 范围内，写不了太多有关系统的东西，底层的容器、网络甚至选举都本来不应该拿出来写。 工程化的项目，比较难写出学术论文的感受。 所以我开始写论文的时候，是非常被动，以凑字数为目标。
+摘要里写了一大堆没用的背景介绍，自己做的内容非常少而且不精准的随便说了说，因为我觉得这个东西应该不会有人看，应该只是一个过场。
+中期何杰老师帮我看开题报告和中期答辩相关内容的时候，几乎是把我写的内容删干净了，每句话都重新组织了一遍，我那时才稍微对这类“写文”的工作，有那么一丝钦佩。后期我迷迷糊糊的写到了2万多字，其实说难听点，就是把拉出来的稀重新摆成佳肴的样子，通过了查重，几乎是觉得自己马上就能毕业了。
+10 号就答辩了，我 8 号去找何老师给我签字，顺便拿着 PPT 进行了预答辩。答辩到一半的时候，何杰老师严肃的说：“你这个不行”，然后对着我的摘要和目录就是一顿乱画，我那时候已经迷糊了，内容都没看怎么能把标题划掉呢，但是我没说，我只是灰溜溜的走了，马上骑摩托回出租房（宿舍晚上会断电），然后开始写，摘要重新写了一遍，2、3、4大段整个剪切出来，1万多字就没了。然后一边粘贴一边写，过程就不说了，睡了4个小时，9号清晨8点赶回学校，交了我的论文给何杰老师，他说可以了，让我去签字。
+答辩完交终稿前，何杰老师又让我重新去了一次，他把我的摘要又删了重新写了一次，经过多次修改后，我的摘要发生了变化：
+原版摘要：
+随着技术的发展，计算机的运算速度飞速提升，这使得许多原本不可能完成的计算任务，在GPU高速算力的加持下，得到了结果。GPU逐渐成为在科学计算的主流。随后NVIDIA推出了CUDA（统一计算设备架构）通用并行计算架构提供了非常易用的GPU开发工具，基于GPU的云计算平台也不再是一个新概念，一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。想要进行类似的规模化AI生产，除了高度依赖GPU的算力本身之外，还需要平台具有调度能力，提供根据优先级抢占调度实现集群算力的共享。
+平台本身的开发是非常重要，但是平台搭建与维护，软件升级与回滚，数据的备份与恢复这些工作，往往需要持续数年甚至数十年之久，并且这些操作繁琐而且容易出错。本课题设计并实现了一套自动部署工具，能够实现 GPU 云计算服务平台的部署与后期维护等相关工作。本设计使用了一主多从的工作模式，自动地将产品部署到集群中，同时负责产品的升级、回滚、备份、恢复等功能。实现了该项目的智能运维自动化。
+本文介绍了工具在设计，开发过程中所使用的技术和具体的实现细节。在测试部署过程中，相比人力手动部署，本工具显著提升了部署效率，杜绝了任何出错的可能性。
+摘要最终版：
+GPU逐渐成为科学计算的主流。同时一些云计算服务商已经推出了GPU云计算服务，可供公司、学校等机构进行规模较大的计算。平台本身的开发是十分重要的，但是平台搭建与维护，软件的升级与回滚，数据的备份与恢复这些工作，往往需要大量的人工操作而且容易出错，从而影响平台的稳定性和运行维护效率。
+本课题设计并实现了一套自动部署运维工具。本工具基于声明式API实现了：（1）GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署；（2）GPU云计算服务平台系统软件的自动升级、回滚、备份等运维功能。此外，本工具通过一主多从的工作模式，实现了部署和运维过程在意外中断情况下的自动恢复功能。
+本文介绍了工具的系统架构，开发过程中所使用的设计模式以及开发技术和具体的实现细节。通过测试验证了自动部署和自动运维功能的正确性，评估了系统的可靠性、伸缩性、可扩展性。通过与传统的手动部署和手动运维进行时间开销对比，评价了本工具在典型部署和运维任务上的效率提升程度。
+何杰老师最后回答了我一个问题：“你是如何把问题描述的如此清楚的？”，他思考了一会儿，然后总结道
+（1）首先是分点，按点来叙述； （2）其次是对要描述的内容起名字，并且添加定语帮助理解，如：GPU云计算服务平台系统软件在的GPU计算机集群上的自动化部署，使用定语和名词将这个事情描述清楚，如果描述不清楚再加辅助描述。 （3）需要长时间的有意识的锻炼，写东西的时候需要咬文嚼字。">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>毕业论文的感受 - Dashjay&#39;s</title>
-<meta property="og:title" content="毕业论文的感受 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2021/06/14/experience-about-graduation-thesis/">毕业论文的感受</a>
+        </h2>
     
-    <span class="article-duration">1 min read</span>
-    
-
-
-    <h1 class="article-title">毕业论文的感受</h1>
+        
+    </div>
 
     
-    <span class="article-date">2021-06-14</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jun 14, 2021</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    1 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>我的毕业论文由何杰老师指导，在这次论文编写过程中，我对非代码类工作产生了新的看法。</p>
+    
+    <p>我的毕业论文由何杰老师指导，在这次论文编写过程中，我对非代码类工作产生了新的看法。</p>
 <p>记录一下我是如何体会到的。</p>
 <p>我的题目是公司的领导帮我定的，公司的需求是写一个 Operator ，想把这个写成论文其实很难：</p>
 <ul>
@@ -122,34 +295,151 @@
 （3）需要长时间的有意识的锻炼，写东西的时候需要咬文嚼字。</p>
 </blockquote>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
-</body>
+    
+    <div class="pswp__scroll-wrap">
 
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

@@ -1,90 +1,234 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x1 Binding 想弄明白虚表是什么首先要清楚绑定(binding)的概念。
+绑定： 可以通过标识符(identifiers)-&amp;gt;地址(address)。标识符是函数和变量都有的，但是今天我们为了学习函数，因此只讨论和函数有关的内容。
+有两种绑定，early binding and late biding.
+0x2 Early Binding 编译时遇到要调用函数时，已经具体调用哪个函数，当遇到调用的某个函数的时候，编译器会用一条指令去替换这个函数，帮助CPU跳到地址所在的函数入口，开始执行，这种 Binding叫Early Binding，也就是编译的时候就确定的绑定模式。
+例如著名的A&#43;B问题，就是一个常见的Early Binding。
+1 2 3 4 5 6 7 8 int add(int x, int y) { return x &#43; y; } int main(){ add(3, 5); // 编译时绑定 } 0x3 Late Binding (Dynamic binding) 有时候，不到运行时（runtime）是不知道要调用哪个函数的，这就是所谓的 late binding, 我更喜欢它另一个名字 —— dynamic binding。s
+那么在什么情况下，会出现 后绑定 的情况呢？
+你想象一下，函数指针就是这样一种情况，不到运行时，永远不知道函数的具体是哪一个。
+1 2 3 4 5 6 7 8 9 10 11 12 13 #include &amp;lt;iostream&amp;gt; int add(int x, int y) { return x &#43; y; } int main() { int (*pFcn)(int, int) = add; std::cout &amp;lt;&amp;lt; pFcn(5, 3) &amp;lt;&amp;lt; std::endl; // add 5 &#43; 3 return 0; } 显而易见，这相对于 early binding 是更加低效的，但是这又可以将函数作为参数传递。'><title>cpp 的虚表到底是什么意思？</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/07/05/cpp-%E7%9A%84%E8%99%9A%E8%A1%A8%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='cpp 的虚表到底是什么意思？'>
+<meta property='og:description' content='0x1 Binding 想弄明白虚表是什么首先要清楚绑定(binding)的概念。
+绑定： 可以通过标识符(identifiers)-&amp;gt;地址(address)。标识符是函数和变量都有的，但是今天我们为了学习函数，因此只讨论和函数有关的内容。
+有两种绑定，early binding and late biding.
+0x2 Early Binding 编译时遇到要调用函数时，已经具体调用哪个函数，当遇到调用的某个函数的时候，编译器会用一条指令去替换这个函数，帮助CPU跳到地址所在的函数入口，开始执行，这种 Binding叫Early Binding，也就是编译的时候就确定的绑定模式。
+例如著名的A&#43;B问题，就是一个常见的Early Binding。
+1 2 3 4 5 6 7 8 int add(int x, int y) { return x &#43; y; } int main(){ add(3, 5); // 编译时绑定 } 0x3 Late Binding (Dynamic binding) 有时候，不到运行时（runtime）是不知道要调用哪个函数的，这就是所谓的 late binding, 我更喜欢它另一个名字 —— dynamic binding。s
+那么在什么情况下，会出现 后绑定 的情况呢？
+你想象一下，函数指针就是这样一种情况，不到运行时，永远不知道函数的具体是哪一个。
+1 2 3 4 5 6 7 8 9 10 11 12 13 #include &amp;lt;iostream&amp;gt; int add(int x, int y) { return x &#43; y; } int main() { int (*pFcn)(int, int) = add; std::cout &amp;lt;&amp;lt; pFcn(5, 3) &amp;lt;&amp;lt; std::endl; // add 5 &#43; 3 return 0; } 显而易见，这相对于 early binding 是更加低效的，但是这又可以将函数作为参数传递。'>
+<meta property='og:url' content='/post/2020/07/05/cpp-%E7%9A%84%E8%99%9A%E8%A1%A8%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-05T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="cpp 的虚表到底是什么意思？">
+<meta name="twitter:description" content="0x1 Binding 想弄明白虚表是什么首先要清楚绑定(binding)的概念。
+绑定： 可以通过标识符(identifiers)-&amp;gt;地址(address)。标识符是函数和变量都有的，但是今天我们为了学习函数，因此只讨论和函数有关的内容。
+有两种绑定，early binding and late biding.
+0x2 Early Binding 编译时遇到要调用函数时，已经具体调用哪个函数，当遇到调用的某个函数的时候，编译器会用一条指令去替换这个函数，帮助CPU跳到地址所在的函数入口，开始执行，这种 Binding叫Early Binding，也就是编译的时候就确定的绑定模式。
+例如著名的A&#43;B问题，就是一个常见的Early Binding。
+1 2 3 4 5 6 7 8 int add(int x, int y) { return x &#43; y; } int main(){ add(3, 5); // 编译时绑定 } 0x3 Late Binding (Dynamic binding) 有时候，不到运行时（runtime）是不知道要调用哪个函数的，这就是所谓的 late binding, 我更喜欢它另一个名字 —— dynamic binding。s
+那么在什么情况下，会出现 后绑定 的情况呢？
+你想象一下，函数指针就是这样一种情况，不到运行时，永远不知道函数的具体是哪一个。
+1 2 3 4 5 6 7 8 9 10 11 12 13 #include &amp;lt;iostream&amp;gt; int add(int x, int y) { return x &#43; y; } int main() { int (*pFcn)(int, int) = add; std::cout &amp;lt;&amp;lt; pFcn(5, 3) &amp;lt;&amp;lt; std::endl; // add 5 &#43; 3 return 0; } 显而易见，这相对于 early binding 是更加低效的，但是这又可以将函数作为参数传递。">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>cpp 的虚表到底是什么意思？ - Dashjay&#39;s</title>
-<meta property="og:title" content="cpp 的虚表到底是什么意思？ - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/07/05/cpp-%E7%9A%84%E8%99%9A%E8%A1%A8%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D/">cpp 的虚表到底是什么意思？</a>
+        </h2>
     
-    <span class="article-duration">2 min read</span>
-    
-
-
-    <h1 class="article-title">cpp 的虚表到底是什么意思？</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-07-05</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jul 05, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    2 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      
-<h2 id="0x1-binding">0x1 Binding <a href="#0x1-binding">¶</a></h2>
+    
+    <h2 id="0x1-binding">0x1 Binding</h2>
 <p>想弄明白虚表是什么首先要清楚绑定(binding)的概念。</p>
 <p><strong>绑定：</strong> 可以通过标识符(identifiers)-&gt;地址(address)。标识符是函数和变量都有的，但是今天我们为了学习函数，因此只讨论和函数有关的内容。</p>
 <p>有两种绑定，<code>early binding</code> and <code>late biding</code>.</p>
-
-<h2 id="0x2-early-binding">0x2 Early Binding <a href="#0x2-early-binding">¶</a></h2>
+<h2 id="0x2-early-binding">0x2 Early Binding</h2>
 <p>编译时遇到要调用函数时，已经具体调用哪个函数，当遇到调用的某个函数的时候，编译器会用一条指令去替换这个函数，帮助CPU跳到地址所在的函数入口，开始执行，这种 <code>Binding</code>叫<code>Early Binding</code>，也就是编译的时候就确定的绑定模式。</p>
 <p>例如著名的A+B问题，就是一个常见的Early Binding。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -109,8 +253,7 @@
 </span></span></span><span style="display:flex;"><span><span style="color:#007f7f"></span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div>
-<h2 id="0x3-late-binding-dynamic-binding">0x3 Late Binding (Dynamic binding) <a href="#0x3-late-binding-dynamic-binding">¶</a></h2>
+</div><h2 id="0x3-late-binding-dynamic-binding">0x3 Late Binding (Dynamic binding)</h2>
 <p>有时候，不到运行时（runtime）是不知道要调用哪个函数的，这就是所谓的 late binding, 我更喜欢它另一个名字 —— dynamic binding。s</p>
 <p>那么在什么情况下，会出现 <strong>后绑定</strong> 的情况呢？</p>
 <p>你想象一下，函数指针就是这样一种情况，不到运行时，永远不知道函数的具体是哪一个。</p>
@@ -147,13 +290,11 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>显而易见，这相对于 early binding 是更加低效的，但是这又可以将函数作为参数传递。</p>
-
-<h2 id="0x4-virtual-table">0x4 Virtual Table <a href="#0x4-virtual-table">¶</a></h2>
+<h2 id="0x4-virtual-table">0x4 Virtual Table</h2>
 <p>为了实现虚函数，C++ 使用了特定的形式的一种 late binding，设计了一个虚表（Virtual Table）来实现它。</p>
 <p>虚表只是一个查询表（LookUp Table），有很多名字，“vtable”, &ldquo;virtual function table&rdquo;, &ldquo;virtual method table&rdquo; or &ldquo;dispatch table&quot;都是它的名字，我最喜欢最后一个名字，调度表 (dispatch table)。</p>
 <p>每个类使用了virtual关键词的，都会得到一个虚表。这个表就是一个静态的函数表，每一个函数，都在虚表中有一个入口，指向最末尾（most-derived【继承链末端的】）函数。</p>
-
-<h3 id="0x41-__vptr">0x41 *__vptr <a href="#0x41-__vptr">¶</a></h3>
+<h3 id="0x41-__vptr">0x41 *__vptr</h3>
 <p>每个类都会有有一个指针 <code>*__vptr</code> 指向虚表（类创建时自动创建）。</p>
 <p>这个指针会指向虚表，并且表中存储这每个函数的入口。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -194,19 +335,15 @@
 </span></span><span style="display:flex;"><span>};
 </span></span></code></pre></td></tr></table>
 </div>
-</div>
-<h4 id="1-base-的-__vptr">1. Base 的 <code>*__vptr</code> <a href="#1-base-%e7%9a%84-__vptr">¶</a></h4>
+</div><h4 id="1-base-的-__vptr">1. Base 的 <code>*__vptr</code></h4>
 <p>Base的<code>*__vptr</code> 指向了Base的虚表，上面有两个函数入口，<code>function1()</code> 和 <code>function2()</code> 分别指向了自己实现的两个virtual函数。</p>
-
-<h4 id="2-d1-的-__vptr">2. D1 的 <code>*__vptr</code> <a href="#2-d1-%e7%9a%84-__vptr">¶</a></h4>
+<h4 id="2-d1-的-__vptr">2. D1 的 <code>*__vptr</code></h4>
 <p>D1 同样包含一个 <code>*__vptr</code> 指向了 D1 的虚表，其中因为 D1 实现了 <code>function1()</code> ，所以虚表中 <code>function1()</code>  指向了自己实现的那个，而 <code>function2()</code> 指向了Base中的那个</p>
-
-<h4 id="3-d2-的-__vptr">3. D2 的 <code>*__vptr</code> <a href="#3-d2-%e7%9a%84-__vptr">¶</a></h4>
+<h4 id="3-d2-的-__vptr">3. D2 的 <code>*__vptr</code></h4>
 <p>D2实现了 <code>function2()</code> ，所以情况和D1相反。</p>
 <p>画一张图就是这样</p>
 <!-- raw HTML omitted -->
-
-<h3 id="0x2-基类指针">0x2 基类指针 <a href="#0x2-%e5%9f%ba%e7%b1%bb%e6%8c%87%e9%92%88">¶</a></h3>
+<h3 id="0x2-基类指针">0x2 基类指针</h3>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -234,8 +371,7 @@
 <li>使用 <code>dPtr-&gt;__vptr</code> 来获得 D1 的虚表。</li>
 <li>决定要调用哪一个 <code>function1()</code></li>
 </ul>
-
-<h2 id="0x5-总结">0x5 总结 <a href="#0x5-%e6%80%bb%e7%bb%93">¶</a></h2>
+<h2 id="0x5-总结">0x5 总结</h2>
 <p>通过这些表，运行时可以知道究竟要调用哪个函数，但是这个操作会花去一些时间，主要体现在以下两方面。</p>
 <ul>
 <li>通过 <code>__vptr</code> 查找虚表</li>
@@ -245,34 +381,151 @@
 <p>对比直接调用（一次操作），和指针间接调用（两次操作），虚函数的调用需要三次操作，因此是比另外两种情况稍微慢一些。</p>
 <p>建议，虚函数很酷，很有用，但是他不但会使得你的类比之前的稍微大一点，还会消耗稍微更多的性能。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
-</body>
+    
+    <div class="pswp__scroll-wrap">
 
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

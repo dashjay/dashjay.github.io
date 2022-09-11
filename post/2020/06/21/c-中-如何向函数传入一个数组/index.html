@@ -1,85 +1,242 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='如何向函数传入一个数组 这看起来是一个简单的问题，但是无论使用哪个方法，总是不能同时兼顾几个问题。
+函数的参数在编译时，参数和临时变量等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。
+1 2 3 void DoSth(int a[4]){ // } 即便你这样传入，你的编译器也会认为你传入的是一个int *。
+1 2 int arr[5] = {0,0,0,0,0}; DoSth(arr); 编译器也不会判你为错误，用一个词叫退化(degrade),你的int a[4]会退化成为一个int *a
+两者究竟有什么区别？
+区别就是，没退化(degrade)之前，你可以知道它的长度，退化之后，便不得而知，通过以下case你可以检验我上面说的这句话
+1 2 3 4 int array[5]{ 1, 2, 3, 4, 5}; std::cout &amp;lt;&amp;lt; sizeof(array) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 20 (在我的电脑上) int *ptr{ array }; // 手动退化 std::cout &amp;lt;&amp;lt; sizeof(ptr) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 8 (在我的电脑上) 为啥要说（在我的电脑上）：int在我的电脑上是4个字节，int *是8字节，也许在32位的电脑上会有所不同。
+言归正传，回到问题本身，C&#43;&#43;为何不允许在函数中直接传递数组：我大概明白你的意思，就是你想在不退化的情况下，直接传递一个数组包含的全部信息到函数中。
+先说能不能做，再说为什么不推荐。
+可以:
+如果仅仅是不退化是可以做到的：
+1 void Dosth1(int (&amp;amp;arr)[4]){} 这样就可以完成题目的愿望，或者你可以仍然认为我没有完成因为：
+1 2 3 void Dosth1(int (&amp;amp;arr)[4]){ std::cout&amp;lt;&amp;lt; typeid(arr).'><title>c&#43;&#43; 中 如何向函数传入一个数组？</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/06/21/c-%E4%B8%AD-%E5%A6%82%E4%BD%95%E5%90%91%E5%87%BD%E6%95%B0%E4%BC%A0%E5%85%A5%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='c&#43;&#43; 中 如何向函数传入一个数组？'>
+<meta property='og:description' content='如何向函数传入一个数组 这看起来是一个简单的问题，但是无论使用哪个方法，总是不能同时兼顾几个问题。
+函数的参数在编译时，参数和临时变量等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。
+1 2 3 void DoSth(int a[4]){ // } 即便你这样传入，你的编译器也会认为你传入的是一个int *。
+1 2 int arr[5] = {0,0,0,0,0}; DoSth(arr); 编译器也不会判你为错误，用一个词叫退化(degrade),你的int a[4]会退化成为一个int *a
+两者究竟有什么区别？
+区别就是，没退化(degrade)之前，你可以知道它的长度，退化之后，便不得而知，通过以下case你可以检验我上面说的这句话
+1 2 3 4 int array[5]{ 1, 2, 3, 4, 5}; std::cout &amp;lt;&amp;lt; sizeof(array) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 20 (在我的电脑上) int *ptr{ array }; // 手动退化 std::cout &amp;lt;&amp;lt; sizeof(ptr) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 8 (在我的电脑上) 为啥要说（在我的电脑上）：int在我的电脑上是4个字节，int *是8字节，也许在32位的电脑上会有所不同。
+言归正传，回到问题本身，C&#43;&#43;为何不允许在函数中直接传递数组：我大概明白你的意思，就是你想在不退化的情况下，直接传递一个数组包含的全部信息到函数中。
+先说能不能做，再说为什么不推荐。
+可以:
+如果仅仅是不退化是可以做到的：
+1 void Dosth1(int (&amp;amp;arr)[4]){} 这样就可以完成题目的愿望，或者你可以仍然认为我没有完成因为：
+1 2 3 void Dosth1(int (&amp;amp;arr)[4]){ std::cout&amp;lt;&amp;lt; typeid(arr).'>
+<meta property='og:url' content='/post/2020/06/21/c-%E4%B8%AD-%E5%A6%82%E4%BD%95%E5%90%91%E5%87%BD%E6%95%B0%E4%BC%A0%E5%85%A5%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-21T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="c&#43;&#43; 中 如何向函数传入一个数组？">
+<meta name="twitter:description" content="如何向函数传入一个数组 这看起来是一个简单的问题，但是无论使用哪个方法，总是不能同时兼顾几个问题。
+函数的参数在编译时，参数和临时变量等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。
+1 2 3 void DoSth(int a[4]){ // } 即便你这样传入，你的编译器也会认为你传入的是一个int *。
+1 2 int arr[5] = {0,0,0,0,0}; DoSth(arr); 编译器也不会判你为错误，用一个词叫退化(degrade),你的int a[4]会退化成为一个int *a
+两者究竟有什么区别？
+区别就是，没退化(degrade)之前，你可以知道它的长度，退化之后，便不得而知，通过以下case你可以检验我上面说的这句话
+1 2 3 4 int array[5]{ 1, 2, 3, 4, 5}; std::cout &amp;lt;&amp;lt; sizeof(array) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 20 (在我的电脑上) int *ptr{ array }; // 手动退化 std::cout &amp;lt;&amp;lt; sizeof(ptr) &amp;lt;&amp;lt; &amp;#34;\n&amp;#34;; // 8 (在我的电脑上) 为啥要说（在我的电脑上）：int在我的电脑上是4个字节，int *是8字节，也许在32位的电脑上会有所不同。
+言归正传，回到问题本身，C&#43;&#43;为何不允许在函数中直接传递数组：我大概明白你的意思，就是你想在不退化的情况下，直接传递一个数组包含的全部信息到函数中。
+先说能不能做，再说为什么不推荐。
+可以:
+如果仅仅是不退化是可以做到的：
+1 void Dosth1(int (&amp;amp;arr)[4]){} 这样就可以完成题目的愿望，或者你可以仍然认为我没有完成因为：
+1 2 3 void Dosth1(int (&amp;amp;arr)[4]){ std::cout&amp;lt;&amp;lt; typeid(arr).">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>c&#43;&#43; 中 如何向函数传入一个数组？ - Dashjay&#39;s</title>
-<meta property="og:title" content="c&#43;&#43; 中 如何向函数传入一个数组？ - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/06/21/c-%E4%B8%AD-%E5%A6%82%E4%BD%95%E5%90%91%E5%87%BD%E6%95%B0%E4%BC%A0%E5%85%A5%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84/">c&#43;&#43; 中 如何向函数传入一个数组？</a>
+        </h2>
     
-    <span class="article-duration">1 min read</span>
-    
-
-
-    <h1 class="article-title">c&#43;&#43; 中 如何向函数传入一个数组？</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-06-21</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jun 21, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    1 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      
-<h3 id="如何向函数传入一个数组">如何向函数传入一个数组 <a href="#%e5%a6%82%e4%bd%95%e5%90%91%e5%87%bd%e6%95%b0%e4%bc%a0%e5%85%a5%e4%b8%80%e4%b8%aa%e6%95%b0%e7%bb%84">¶</a></h3>
+    
+    <h3 id="如何向函数传入一个数组">如何向函数传入一个数组</h3>
 <p>这看起来是一个简单的问题，但是无论使用哪个方法，总是<strong>不能同时兼顾</strong>几个问题。</p>
 <p>函数的参数在编译时，<strong>参数</strong>和<strong>临时变量</strong>等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -173,37 +330,151 @@
 <p>我们本来可以传入<code>int a[5]</code>或者<code>int a[N]</code>到函数里，只需要多传一个长度参数即可，然而我们提前指定了长度，就失去了这个权利。</p>
 <p>为什么c++想方设法的都要让你传入一个指针，而不是数组本身，那时因为栈空间非常昂贵，函数调用的时候要拷贝参数到寄存器，栈空间…………（说多了答主也不懂了）。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
-<script src="/js/math-code.js"></script>
-<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
+    
+    <div class="pswp__scroll-wrap">
 
-</body>
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
 
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>

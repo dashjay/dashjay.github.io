@@ -1,101 +1,251 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='今天看了一篇关于解释器和编译器的区别的文章，自己也谈谈自己的理解。
+编译器 编译器是一个程序（可以使用其他语言来实现），可以读取 源代码（source code） 并且产生 可执行文件，之后仅需要运行可执行文件即可，无需在每次执行的时候编译（有一些程序编译器来是相当耗时的，笔者因为一些特殊原因编译了一次 g&#43;&#43;，竟然花费了长达2小时）。以下图一就是编译器的运行过程。
+流行使用编译器之前，编译器非常慢，并且从来不对产生的代码进行优化，许多年过后，编译器已经能非常快速的的优化并且生成二进制可执行文件，总之比人写汇编快一些。
+解释器 解释器是一个直接从源代码中执行指令的程序，常见的解释语言有(Python，PHP)，解释型语言往往有更加灵活的语法相对于编译型语言，但是他们通常更加低效，因为每次执行的时候都需要解释。
+编译器VS解释器 你可以幻想如果一方有压倒性的优势，另一方就没有存在的意义了，所以两者既然都存在，那么肯定有原因，
+https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646
+翻译来自以上问答。
+大体上讲，编译型语言或者编译器具有以下 优点：
+因为编译器可以在执行前浏览一遍代码，他们可以在生成最终可执行文件的之前，执行一些分析和优化，使得编译的可执行文件相比于逐行解释、执行来的更加快速。
+编译器可以生成与原来的高级语言表现相同的低级[^1]的code，……看不懂,大概意思就是可以减少内存的开销（我的垃圾英语）。
+Compilers can often generate low-level code that performs the equivalent of a high-level ideas like &amp;ldquo;dynamic dispatch&amp;rdquo; or &amp;ldquo;inheritance&amp;rdquo; in terms of memory lookups inside of tables. This means that the resulting programs need to remember less information about the original code, lowering the memory usage of the generated program.
+编译产生的程序，运行起来比解释代码快，因为指令本身就是的目的，而不是像解析型语言一样，除了执行程序本身之外还要运行一个解释器。'><title>编译器 VS 解释器</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/05/07/compiler-vs-interpreter/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='编译器 VS 解释器'>
+<meta property='og:description' content='今天看了一篇关于解释器和编译器的区别的文章，自己也谈谈自己的理解。
+编译器 编译器是一个程序（可以使用其他语言来实现），可以读取 源代码（source code） 并且产生 可执行文件，之后仅需要运行可执行文件即可，无需在每次执行的时候编译（有一些程序编译器来是相当耗时的，笔者因为一些特殊原因编译了一次 g&#43;&#43;，竟然花费了长达2小时）。以下图一就是编译器的运行过程。
+流行使用编译器之前，编译器非常慢，并且从来不对产生的代码进行优化，许多年过后，编译器已经能非常快速的的优化并且生成二进制可执行文件，总之比人写汇编快一些。
+解释器 解释器是一个直接从源代码中执行指令的程序，常见的解释语言有(Python，PHP)，解释型语言往往有更加灵活的语法相对于编译型语言，但是他们通常更加低效，因为每次执行的时候都需要解释。
+编译器VS解释器 你可以幻想如果一方有压倒性的优势，另一方就没有存在的意义了，所以两者既然都存在，那么肯定有原因，
+https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646
+翻译来自以上问答。
+大体上讲，编译型语言或者编译器具有以下 优点：
+因为编译器可以在执行前浏览一遍代码，他们可以在生成最终可执行文件的之前，执行一些分析和优化，使得编译的可执行文件相比于逐行解释、执行来的更加快速。
+编译器可以生成与原来的高级语言表现相同的低级[^1]的code，……看不懂,大概意思就是可以减少内存的开销（我的垃圾英语）。
+Compilers can often generate low-level code that performs the equivalent of a high-level ideas like &amp;ldquo;dynamic dispatch&amp;rdquo; or &amp;ldquo;inheritance&amp;rdquo; in terms of memory lookups inside of tables. This means that the resulting programs need to remember less information about the original code, lowering the memory usage of the generated program.
+编译产生的程序，运行起来比解释代码快，因为指令本身就是的目的，而不是像解析型语言一样，除了执行程序本身之外还要运行一个解释器。'>
+<meta property='og:url' content='/post/2020/05/07/compiler-vs-interpreter/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-05-07T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="编译器 VS 解释器">
+<meta name="twitter:description" content="今天看了一篇关于解释器和编译器的区别的文章，自己也谈谈自己的理解。
+编译器 编译器是一个程序（可以使用其他语言来实现），可以读取 源代码（source code） 并且产生 可执行文件，之后仅需要运行可执行文件即可，无需在每次执行的时候编译（有一些程序编译器来是相当耗时的，笔者因为一些特殊原因编译了一次 g&#43;&#43;，竟然花费了长达2小时）。以下图一就是编译器的运行过程。
+流行使用编译器之前，编译器非常慢，并且从来不对产生的代码进行优化，许多年过后，编译器已经能非常快速的的优化并且生成二进制可执行文件，总之比人写汇编快一些。
+解释器 解释器是一个直接从源代码中执行指令的程序，常见的解释语言有(Python，PHP)，解释型语言往往有更加灵活的语法相对于编译型语言，但是他们通常更加低效，因为每次执行的时候都需要解释。
+编译器VS解释器 你可以幻想如果一方有压倒性的优势，另一方就没有存在的意义了，所以两者既然都存在，那么肯定有原因，
+https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646
+翻译来自以上问答。
+大体上讲，编译型语言或者编译器具有以下 优点：
+因为编译器可以在执行前浏览一遍代码，他们可以在生成最终可执行文件的之前，执行一些分析和优化，使得编译的可执行文件相比于逐行解释、执行来的更加快速。
+编译器可以生成与原来的高级语言表现相同的低级[^1]的code，……看不懂,大概意思就是可以减少内存的开销（我的垃圾英语）。
+Compilers can often generate low-level code that performs the equivalent of a high-level ideas like &amp;ldquo;dynamic dispatch&amp;rdquo; or &amp;ldquo;inheritance&amp;rdquo; in terms of memory lookups inside of tables. This means that the resulting programs need to remember less information about the original code, lowering the memory usage of the generated program.
+编译产生的程序，运行起来比解释代码快，因为指令本身就是的目的，而不是像解析型语言一样，除了执行程序本身之外还要运行一个解释器。">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>编译器 VS 解释器 - Dashjay&#39;s</title>
-<meta property="og:title" content="编译器 VS 解释器 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/05/07/compiler-vs-interpreter/">编译器 VS 解释器</a>
+        </h2>
     
-    <span class="article-duration">1 min read</span>
-    
-
-
-    <h1 class="article-title">编译器 VS 解释器</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-05-07</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">May 07, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    1 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      <p>今天看了
-<a href="https://www.learncpp.com/cpp-tutorial/introduction-to-programming-languages/" target="_blank" rel="noopener">一篇关于解释器和编译器的区别的文章</a>
-，自己也谈谈自己的理解。</p>
-
-<h2 id="编译器">编译器 <a href="#%e7%bc%96%e8%af%91%e5%99%a8">¶</a></h2>
+    
+    <p>今天看了<a class="link" href="https://www.learncpp.com/cpp-tutorial/introduction-to-programming-languages/"  target="_blank" rel="noopener"
+    >一篇关于解释器和编译器的区别的文章</a>，自己也谈谈自己的理解。</p>
+<h2 id="编译器">编译器</h2>
 <p>编译器是一个程序（可以使用其他语言来实现），可以读取 <strong>源代码（source code）</strong> 并且产生 <strong>可执行文件</strong>，之后仅需要运行可执行文件即可，无需在每次执行的时候编译（有一些程序编译器来是相当耗时的，笔者因为一些特殊原因编译了一次 <code>g++</code>，竟然花费了长达2小时）。以下图一就是编译器的运行过程。</p>
 <!-- raw HTML omitted -->
 <p>流行使用编译器之前，编译器非常慢，并且从来不对产生的代码进行优化，许多年过后，编译器已经能非常快速的的优化并且生成二进制可执行文件，总之比人写汇编快一些。</p>
-
-<h2 id="解释器">解释器 <a href="#%e8%a7%a3%e9%87%8a%e5%99%a8">¶</a></h2>
+<h2 id="解释器">解释器</h2>
 <p>解释器是一个直接从源代码中执行指令的程序，常见的解释语言有(Python，PHP)，解释型语言往往有更加灵活的语法相对于编译型语言，但是他们通常更加低效，因为每次执行的时候都需要解释。</p>
 <!-- raw HTML omitted -->
-
-<h2 id="编译器vs解释器">编译器VS解释器 <a href="#%e7%bc%96%e8%af%91%e5%99%a8vs%e8%a7%a3%e9%87%8a%e5%99%a8">¶</a></h2>
+<h2 id="编译器vs解释器">编译器VS解释器</h2>
 <p>你可以幻想如果一方有压倒性的优势，另一方就没有存在的意义了，所以两者既然都存在，那么肯定有原因，</p>
-<p>
-<a href="https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646" target="_blank" rel="noopener">https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646</a>
-</p>
+<p><a class="link" href="https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646"  target="_blank" rel="noopener"
+    >https://stackoverflow.com/questions/38491212/difference-between-compiled-and-interpreted-languages/38491646#38491646</a></p>
 <p>翻译来自以上问答。</p>
 <p>大体上讲，编译型语言或者编译器具有以下 <strong>优点</strong>：</p>
 <ol>
@@ -141,41 +291,156 @@
 <p>解释器通常需要花费一些CPU时间在程序运行时，会拖慢运行的程序。</p>
 </li>
 </ol>
-
-<h2 id="jvm">JVM <a href="#jvm">¶</a></h2>
+<h2 id="jvm">JVM</h2>
 <p>因为解释器和编译器有恰好互补的优缺点，因此，按照人类计算机发展的惯例[^2]，在两者中间的东西就会缓缓出现。<code>Java's JVM</code>就是这样的东西。JVM会去发现一些会执行多次的代码并且将他们翻译成机器语言，称为 ”hot code&quot;，相反 ”cold code&quot; 就直接解释运行。JVM 可以做一些动态分析，可以加速程序的运行。</p>
-
-<h2 id="其他">其他 <a href="#%e5%85%b6%e4%bb%96">¶</a></h2>
+<h2 id="其他">其他</h2>
 <p>好像我写了一本书，美国人想要读有两种办法，他可以请一个翻译念给他听（解释器），也可以让另一个翻译把他翻译成英语（编译器）再从头看，当然不是像国内某些出版书籍一样，使用谷歌翻译。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
 
     </div>
 
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
 
-  </article>
+            </main>
+    
 
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
 
-  
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
 
+        document.head.appendChild(customFont);
+    }());
+</script>
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
-</footer>
-
-</div>
-
-
-
-</body>
-
+    </body>
 </html>
-
-  
-</main>

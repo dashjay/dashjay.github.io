@@ -1,85 +1,218 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x1楔子 几天前在学习cpp的时候，因为好奇，在上面试了一些 c-like string 拼接操作，一下击穿了我自己，我写了个样例。
+1 2 3 4 5 6 7 8 9 #include&amp;lt;cstring&amp;gt; #include&amp;lt;iostream&amp;gt; int main(){ char Hello[64]{&amp;#34;Hello World&amp;#34;}; char temp[]{&amp;#34;Alex&amp;#34;}; std::strcat(temp,Hello); std::cout &amp;lt;&amp;lt;temp[5]&amp;lt;&amp;lt;std::endl; } 这段代码在gnu-gcc上直接编译不会过，但是我用的mac llvm，编译过了并且输出e。 这时候我就很奇怪了，temp应该只是一个 [&#39;A&#39;, &#39;l&#39;, &#39;e&#39;, &#39;x&#39;, &#39;\n&#39;] 这样一个字符串，但是为什么strcat之后，却能”越界“访问？
+为此，我提出了灵魂拷问：
+strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？ 明显的越界操作为什么得到了预期的结果？ 如果第二个参数cat到第一个参数不够大，那么会重新分配，这对于cpp来说是否是一种内存回收操作？ 问题有点天马行空，但是一个一个来看看吧。
+0x2 strcat 底层如何操作 1 2 3 4 5 6 7 8 9 10 11 #ifndef STRCAT # define STRCAT strcat #endif /* Append SRC on the end of DEST.'><title>使用c-like string strcat 的研究</title>
 
-<head>
-  <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Hugo 0.101.0" />
+<link rel='canonical' href='/post/2020/07/17/%E4%BD%BF%E7%94%A8c-like-string-strcat-%E7%9A%84%E7%A0%94%E7%A9%B6/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='使用c-like string strcat 的研究'>
+<meta property='og:description' content='0x1楔子 几天前在学习cpp的时候，因为好奇，在上面试了一些 c-like string 拼接操作，一下击穿了我自己，我写了个样例。
+1 2 3 4 5 6 7 8 9 #include&amp;lt;cstring&amp;gt; #include&amp;lt;iostream&amp;gt; int main(){ char Hello[64]{&amp;#34;Hello World&amp;#34;}; char temp[]{&amp;#34;Alex&amp;#34;}; std::strcat(temp,Hello); std::cout &amp;lt;&amp;lt;temp[5]&amp;lt;&amp;lt;std::endl; } 这段代码在gnu-gcc上直接编译不会过，但是我用的mac llvm，编译过了并且输出e。 这时候我就很奇怪了，temp应该只是一个 [&#39;A&#39;, &#39;l&#39;, &#39;e&#39;, &#39;x&#39;, &#39;\n&#39;] 这样一个字符串，但是为什么strcat之后，却能”越界“访问？
+为此，我提出了灵魂拷问：
+strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？ 明显的越界操作为什么得到了预期的结果？ 如果第二个参数cat到第一个参数不够大，那么会重新分配，这对于cpp来说是否是一种内存回收操作？ 问题有点天马行空，但是一个一个来看看吧。
+0x2 strcat 底层如何操作 1 2 3 4 5 6 7 8 9 10 11 #ifndef STRCAT # define STRCAT strcat #endif /* Append SRC on the end of DEST.'>
+<meta property='og:url' content='/post/2020/07/17/%E4%BD%BF%E7%94%A8c-like-string-strcat-%E7%9A%84%E7%A0%94%E7%A9%B6/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-17T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta name="twitter:title" content="使用c-like string strcat 的研究">
+<meta name="twitter:description" content="0x1楔子 几天前在学习cpp的时候，因为好奇，在上面试了一些 c-like string 拼接操作，一下击穿了我自己，我写了个样例。
+1 2 3 4 5 6 7 8 9 #include&amp;lt;cstring&amp;gt; #include&amp;lt;iostream&amp;gt; int main(){ char Hello[64]{&amp;#34;Hello World&amp;#34;}; char temp[]{&amp;#34;Alex&amp;#34;}; std::strcat(temp,Hello); std::cout &amp;lt;&amp;lt;temp[5]&amp;lt;&amp;lt;std::endl; } 这段代码在gnu-gcc上直接编译不会过，但是我用的mac llvm，编译过了并且输出e。 这时候我就很奇怪了，temp应该只是一个 [&#39;A&#39;, &#39;l&#39;, &#39;e&#39;, &#39;x&#39;, &#39;\n&#39;] 这样一个字符串，但是为什么strcat之后，却能”越界“访问？
+为此，我提出了灵魂拷问：
+strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？ 明显的越界操作为什么得到了预期的结果？ 如果第二个参数cat到第一个参数不够大，那么会重新分配，这对于cpp来说是否是一种内存回收操作？ 问题有点天马行空，但是一个一个来看看吧。
+0x2 strcat 底层如何操作 1 2 3 4 5 6 7 8 9 10 11 #ifndef STRCAT # define STRCAT strcat #endif /* Append SRC on the end of DEST.">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
-<title>使用c-like string strcat 的研究 - Dashjay&#39;s</title>
-<meta property="og:title" content="使用c-like string strcat 的研究 - Dashjay&#39;s">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
 
 
 
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
 
-  
-
-
-
-
-
-
-<link rel="stylesheet" href="/css/fonts.css" media="all">
-<link rel="stylesheet" href="/css/main.css" media="all">
-
-
-
-
-
-
-
-</head>
-
-<body>
-  <div class="wrapper">
-    <header class="header">
-      <nav class="nav">
-  <a href="/" class="nav-logo">
-    <img src="/images/%3cnil%3e"
-         width=""
-         height=""
-         alt="">
-  </a>
-
-  <ul class="nav-links">
+    <div class="article-details">
     
-    <li><a href="/">Home</a></li>
-    
-    <li><a href="https://learncppcn.github.io/">LearnCPP中文翻译</a></li>
-    
-    <li><a href="/cv">CV</a></li>
-    
-    <li><a href="/daily">我在做什么？</a></li>
-    
-    <li><a href="/open_source">Contribution</a></li>
-    
-  </ul>
-</nav>
 
-    </header>
-
-<main class="content" role="main">
-
-  <article class="article">
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2020/07/17/%E4%BD%BF%E7%94%A8c-like-string-strcat-%E7%9A%84%E7%A0%94%E7%A9%B6/">使用c-like string strcat 的研究</a>
+        </h2>
     
-    <span class="article-duration">1 min read</span>
-    
-
-
-    <h1 class="article-title">使用c-like string strcat 的研究</h1>
+        
+    </div>
 
     
-    <span class="article-date">2020-07-17</span>
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Jul 17, 2020</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    1 minute read
+                </time>
+            </div>
+        
+    </footer>
     
 
     
+</div>
+</header>
 
+    <section class="article-content">
     
-
-    <div class="article-content">
-      
-<h2 id="0x1楔子">0x1楔子 <a href="#0x1%e6%a5%94%e5%ad%90">¶</a></h2>
+    
+    <h2 id="0x1楔子">0x1楔子</h2>
 <p>几天前在学习cpp的时候，因为好奇，在上面试了一些 <code>c-like string</code> 拼接操作，一下击穿了我自己，我写了个样例。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -115,8 +248,7 @@
 <li>如果第二个参数cat到第一个参数不够大，那么会重新分配，这对于cpp来说是否是一种内存回收操作？</li>
 </ul>
 <p>问题有点天马行空，但是一个一个来看看吧。</p>
-
-<h2 id="0x2-strcat-底层如何操作">0x2 strcat 底层如何操作 <a href="#0x2-strcat-%e5%ba%95%e5%b1%82%e5%a6%82%e4%bd%95%e6%93%8d%e4%bd%9c">¶</a></h2>
+<h2 id="0x2-strcat-底层如何操作">0x2 strcat 底层如何操作</h2>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -148,11 +280,9 @@
 </div><p>立马看了gnu里定义的源代码。
 并且，到知乎提问，不一会就有好几个大佬来回答。</p>
 <p>大家的回答让我意识到，这不是cpp层的问题，而是一个内存，栈空间级别的问题。</p>
-
-<h2 id="0x3-这个不安全的操作被llvm优化了么">0x3 这个不安全的操作被llvm优化了么 <a href="#0x3-%e8%bf%99%e4%b8%aa%e4%b8%8d%e5%ae%89%e5%85%a8%e7%9a%84%e6%93%8d%e4%bd%9c%e8%a2%abllvm%e4%bc%98%e5%8c%96%e4%ba%86%e4%b9%88">¶</a></h2>
+<h2 id="0x3-这个不安全的操作被llvm优化了么">0x3 这个不安全的操作被llvm优化了么</h2>
 <p>一句话打回来: 研究 未定义行为（UB）是毫无意义的</p>
-
-<h2 id="0x4-明显的越界操作为什么得到了预期的结果">0x4 明显的越界操作为什么得到了预期的结果 <a href="#0x4-%e6%98%8e%e6%98%be%e7%9a%84%e8%b6%8a%e7%95%8c%e6%93%8d%e4%bd%9c%e4%b8%ba%e4%bb%80%e4%b9%88%e5%be%97%e5%88%b0%e4%ba%86%e9%a2%84%e6%9c%9f%e7%9a%84%e7%bb%93%e6%9e%9c">¶</a></h2>
+<h2 id="0x4-明显的越界操作为什么得到了预期的结果">0x4 明显的越界操作为什么得到了预期的结果</h2>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -170,45 +300,157 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>问题在于“恰好能完成这个操作”,这基于 temp (destination 参数) 后声明,它通常（或者）大概率被编译器分配到地址更低的位置。</p>
-
-<h2 id="0x5-cpp内存回收">0x5 cpp内存回收<code>?</code> <a href="#0x5-cpp%e5%86%85%e5%ad%98%e5%9b%9e%e6%94%b6">¶</a></h2>
+<h2 id="0x5-cpp内存回收">0x5 cpp内存回收<code>?</code></h2>
 <p>我是傻逼</p>
-
-<h2 id="0x6-总结">0x6 总结 <a href="#0x6-%e6%80%bb%e7%bb%93">¶</a></h2>
+<h2 id="0x6-总结">0x6 总结</h2>
 <p>大佬们的建议普遍就是摈弃<code>cstr</code>那套的东西，<code>string</code> 的 <code>operator+</code> 就非常完美。</p>
 <p>我表示赞同，但是这是在学习过程中，如果一旦到了生产中，难免接触祖传代码。</p>
 
-    </div>
+</section>
 
 
-  </article>
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
 
 
-  
+
+        <span>
+            Last updated on Sep 11, 2022 04:55 UTC
+        </span>
+    </section></footer>
 
 
-  <footer class="footer">
-  <ul class="footer-links">
-    <li>
-      <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
-    </li>
-    <li>
-      <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png"
-          alt="Img link to Hugo website" width="22" height="22"></a>
-    </li>
-  </ul>
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2022 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
 </footer>
 
-</div>
 
-<script src="/js/math-code.js"></script>
-<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
+    
+    <div class="pswp__bg"></div>
 
+    
+    <div class="pswp__scroll-wrap">
 
-</body>
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
 
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
 </html>
-
-  
-</main>
