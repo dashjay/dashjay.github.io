@@ -25,7 +25,7 @@ Pid 障眼法 我们知道在 Linux 中，启动进程需要使用函数（系�
 Mount Namespace 让你的进程以为自己有根目录，其实那只不过是挂载了一个目录目录到进程的根目录。 Network Namespace 让你的进程隔离于其他网路设备，只能看到你为它连接的网络设备。 User Namespace 将本地的虚拟 user-id 映射到真实的 user-id 中。 包括就连主机名等等其他资源，也可以用障眼法隔离起来，只要理解了，就不会觉得 Docker 很神奇了。'>
 <meta property='og:url' content='/post/2021/01/13/how-docker-plays/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='docker' /><meta property='article:tag' content='kubernetes' /><meta property='article:tag' content='Linux Namespace' /><meta property='article:published_time' content='2021-01-13T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T05:20:04&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='docker' /><meta property='article:tag' content='kubernetes' /><meta property='article:tag' content='Linux Namespace' /><meta property='article:published_time' content='2021-01-13T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T05:56:27&#43;00:00'/>
 <meta name="twitter:title" content="Docker 玩的障眼法">
 <meta name="twitter:description" content="刚刚入手docker会感觉有点像虚拟机，但是又有许多不同，一查资料都在说虚拟机虚拟了磁盘/CPU&amp;hellip;，docker轻量但是基本没说究竟怎么回事。 今天学习了 Docker 的一些实现细节之后，发现这些只不过都是 Docker 或者说 Linux 玩的障眼法，让我们来看一眼。
 容器是什么？ 容器其实就是在操作系统启动进程的时候，通过附加 一些参数，利用操作系统提供的接口来 隔离不相关资源，最后得到一个特殊的进程。
@@ -297,7 +297,7 @@ Mount Namespace 让你的进程以为自己有根目录，其实那只不过是�
 
 
         <span>
-            Last updated on Sep 11, 2022 05:20 UTC
+            Last updated on Sep 11, 2022 05:56 UTC
         </span>
     </section></footer>
 

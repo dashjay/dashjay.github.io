@@ -85,7 +85,44 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;0x01&#34;&gt;0x01&lt;/h2&gt;
+&lt;/div&gt;&lt;p&gt;到目前为止，我们也就是简单了解了一下，aws s3 协议请求和返回值，业务的话也相对简单：创建/删除 bucket，上传、删除 object。&lt;/p&gt;
+&lt;p&gt;最难的应该是 ListObjectV2，并不是难在实现上，而是需要理解 key 和 linux 树形文件的关系，说道这里要说一下这个 s3 和文件系统的区别。&lt;/p&gt;
+&lt;p&gt;s3 本质上是一个key-value存储，上传文件的业务就对应文件名为 &lt;code&gt;key = key_prefix/dir_name/file_name&lt;/code&gt;，内容就是这个文件的content，&lt;strong&gt;本质上 key 只不过是看起来符合 linux 树形文件系统&lt;/strong&gt; 的规范而已，如果你要把你的 key 当做是 linux 里的文件目录，key_prefix 是一个文件夹，&lt;code&gt;dir_name&lt;/code&gt; 是一个文件夹，&lt;code&gt;file_name&lt;/code&gt; 是一个文件的话，你也可以这么理解。s3 也可以帮你这样做，例如：&lt;/p&gt;
+&lt;p&gt;如果 S3 里面有这样一些文件：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;key_prefix/dir_name1/file_name1
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;key_prefix/dir_name2/file_name2
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;key_prefix/dir_name3/file_name3
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-mysql&#34; data-lang=&#34;mysql&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;// &lt;span style=&#34;color:#f00&#34;&gt;我下面的请求&lt;/span&gt; `url` &lt;span style=&#34;color:#f00&#34;&gt;里的一些字符没有经过&lt;/span&gt; `urlEncode` &lt;span style=&#34;color:#f00&#34;&gt;转化为&lt;/span&gt; `html` &lt;span style=&#34;color:#f00&#34;&gt;实体&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;GET /bucket_name?list-type=&lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;2&lt;/span&gt;&amp;amp;delimiter=/&amp;amp;prefix=key_prefix/ HTTP/&lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;1&lt;/span&gt;.&lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;x-amz-request-payer: RequestPayer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;x-amz-expected-bucket-owner: ExpectedBucketOwner
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;如果上面上传的 key 存在，你就会得到 &lt;code&gt;dir_name1,dir_name2,dir_name3&lt;/code&gt; 这样三个 &lt;code&gt;common_prefix&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;也就是说，当 &lt;code&gt;delimiter&lt;/code&gt; 为 &lt;code&gt;/&lt;/code&gt; 的时候，就会像文件系统那样，按照树形的去分割每个 key，像文件目录那样返回。&lt;/p&gt;
+&lt;p&gt;如果没有传入 delimiter，就直接返回所有key就好了……（当然一般会限制前1000个，如果传入 start-after 之后，会从第 start-after+1 个开始。&lt;/p&gt;
+&lt;p&gt;具体的实现在这里：&lt;a class=&#34;link&#34; href=&#34;https://github.com/dashjay/boss/blob/master/pkg/s3backend/s3backend.go#L211&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;boss/pkg/s3backend/s3backend.go&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;0x01&#34;&gt;0x01&lt;/h2&gt;
 &lt;h2 id=&#34;0x02&#34;&gt;0x02&lt;/h2&gt;
 </description>
         </item>
