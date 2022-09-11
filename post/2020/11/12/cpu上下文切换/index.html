@@ -39,7 +39,7 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息'>
 <meta property='og:url' content='/post/2020/11/12/cpu%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T05:20:04&#43;00:00'/>
 <meta name="twitter:title" content="CPU上下文切换">
 <meta name="twitter:description" content="CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。
 常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。
@@ -377,7 +377,7 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 
 
         <span>
-            Last updated on Sep 11, 2022 04:55 UTC
+            Last updated on Sep 11, 2022 05:20 UTC
         </span>
     </section></footer>
 
@@ -404,6 +404,8 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+        <br>
+        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
     </section>
 </footer>
 

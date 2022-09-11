@@ -17,7 +17,7 @@ strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？
 0x2 strcat 底层如何操作 1 2 3 4 5 6 7 8 9 10 11 #ifndef STRCAT # define STRCAT strcat #endif /* Append SRC on the end of DEST.'>
 <meta property='og:url' content='/post/2020/07/17/%E4%BD%BF%E7%94%A8c-like-string-strcat-%E7%9A%84%E7%A0%94%E7%A9%B6/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-17T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T04:55:48&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-17T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-11T05:20:04&#43;00:00'/>
 <meta name="twitter:title" content="使用c-like string strcat 的研究">
 <meta name="twitter:description" content="0x1楔子 几天前在学习cpp的时候，因为好奇，在上面试了一些 c-like string 拼接操作，一下击穿了我自己，我写了个样例。
 1 2 3 4 5 6 7 8 9 #include&amp;lt;cstring&amp;gt; #include&amp;lt;iostream&amp;gt; int main(){ char Hello[64]{&amp;#34;Hello World&amp;#34;}; char temp[]{&amp;#34;Alex&amp;#34;}; std::strcat(temp,Hello); std::cout &amp;lt;&amp;lt;temp[5]&amp;lt;&amp;lt;std::endl; } 这段代码在gnu-gcc上直接编译不会过，但是我用的mac llvm，编译过了并且输出e。 这时候我就很奇怪了，temp应该只是一个 [&#39;A&#39;, &#39;l&#39;, &#39;e&#39;, &#39;x&#39;, &#39;\n&#39;] 这样一个字符串，但是为什么strcat之后，却能”越界“访问？
@@ -322,7 +322,7 @@ strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？
 
 
         <span>
-            Last updated on Sep 11, 2022 04:55 UTC
+            Last updated on Sep 11, 2022 05:20 UTC
         </span>
     </section></footer>
 
@@ -349,6 +349,8 @@ strcat底层是如何操作的？ 这个不安全的操作被llvm优化了么？
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+        <br>
+        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
     </section>
 </footer>
 
