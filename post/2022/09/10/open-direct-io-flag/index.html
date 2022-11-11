@@ -1,47 +1,23 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。'><title>汉明码对数据的纠错&amp;ECC内存</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 blocksize=4M 的 sync 写，到 direct_io 的写，看看性能有多少提升。我以前对这个 flag 的了解只有：它会跳过 pagecache，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。
+0x00 man open open(2) linux manual page 里面有对 O_DIRECT 的描述如下：
+1 2 3 4 5 6 7 8 9 10 Try to minimize cache effects of the I/O to and from this file. In general this will degrade performance, but it is useful in special situations, such as when applications do their own caching. File I/O is done directly to/from user-space buffers.'><title>DirectIO Flag 问题</title>
 
-<link rel='canonical' href='/post/2022/07/10/hanming-code-ecc/'>
+<link rel='canonical' href='/post/2022/09/10/open-direct-io-flag/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='汉明码对数据的纠错&amp;ECC内存'>
-<meta property='og:description' content='0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。'>
-<meta property='og:url' content='/post/2022/07/10/hanming-code-ecc/'>
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='DirectIO Flag 问题'>
+<meta property='og:description' content='最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 blocksize=4M 的 sync 写，到 direct_io 的写，看看性能有多少提升。我以前对这个 flag 的了解只有：它会跳过 pagecache，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。
+0x00 man open open(2) linux manual page 里面有对 O_DIRECT 的描述如下：
+1 2 3 4 5 6 7 8 9 10 Try to minimize cache effects of the I/O to and from this file. In general this will degrade performance, but it is useful in special situations, such as when applications do their own caching. File I/O is done directly to/from user-space buffers.'>
+<meta property='og:url' content='/post/2022/09/10/open-direct-io-flag/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-07-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2022-11-11T15:03:59&#43;00:00'/>
-<meta name="twitter:title" content="汉明码对数据的纠错&amp;ECC内存">
-<meta name="twitter:description" content="0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-09-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2022-11-11T15:03:59&#43;00:00'/>
+<meta name="twitter:title" content="DirectIO Flag 问题">
+<meta name="twitter:description" content="最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 blocksize=4M 的 sync 写，到 direct_io 的写，看看性能有多少提升。我以前对这个 flag 的了解只有：它会跳过 pagecache，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。
+0x00 man open open(2) linux manual page 里面有对 O_DIRECT 的描述如下：
+1 2 3 4 5 6 7 8 9 10 Try to minimize cache effects of the I/O to and from this file. In general this will degrade performance, but it is useful in special situations, such as when applications do their own caching. File I/O is done directly to/from user-space buffers.">
     </head>
     <body class="
     article-page
@@ -182,7 +158,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/post/2022/07/10/hanming-code-ecc/">汉明码对数据的纠错&amp;ECC内存</a>
+            <a href="/post/2022/09/10/open-direct-io-flag/">DirectIO Flag 问题</a>
         </h2>
     
         
@@ -201,7 +177,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                <time class="article-time--published">Jul 10, 2022</time>
+                <time class="article-time--published">Sep 10, 2022</time>
             </div>
         
 
@@ -216,7 +192,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
 
                 <time class="article-time--reading">
-                    1 minute read
+                    2 minute read
                 </time>
             </div>
         
@@ -230,145 +206,60 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
     <section class="article-content">
     
     
-    <h2 id="0x00">0x00</h2>
-<p>在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。</p>
-<p>最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。</p>
-<p>今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。</p>
-<p>今天我们来回顾一下学生知识：</p>
-<h2 id="0x01">0x01</h2>
-<p>假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位</p>
-<p>假设数据就是 <code>0010 0011 010</code> 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。</p>
-<p>为了方便，我把数据放进表格里，然后打上标志</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>A0</th>
-<th>A1</th>
-<th>A2</th>
-<th>0</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>A3</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr>
-<td>A8</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-</tr>
-<tr>
-<td>1</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-</tbody>
-</table></div>
-<p>我先说不说 A 相关的比特位的产生规则，我先直接填充上。</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>0</th>
-<th>1</th>
-<th>1</th>
-<th>0</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr>
-<td>1</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-</tr>
-<tr>
-<td>1</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-</tbody>
-</table></div>
-<p>并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,</p>
-<p>然后把所有1位置对应的二进制描述全部按顺序列出来</p>
+    <p>最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 <code>blocksize=4M</code> 的 <code>sync</code> 写，到 <code>direct_io</code> 的写，看看性能有多少提升。我以前对这个 <code>flag</code> 的了解只有：它会跳过 <code>pagecache</code>，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。</p>
+<h2 id="0x00-man-open">0x00 man open</h2>
+<p><a class="link" href="https://man7.org/linux/man-pages/man2/open.2.html"  target="_blank" rel="noopener"
+    >open(2) linux manual page</a>
+里面有对 O_DIRECT 的描述如下：</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
-<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
-</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">8
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
-<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>0001
-</span></span><span style="display:flex;"><span>0010
-</span></span><span style="display:flex;"><span>0100
-</span></span><span style="display:flex;"><span>0110
-</span></span><span style="display:flex;"><span>1000
-</span></span><span style="display:flex;"><span>1011
-</span></span><span style="display:flex;"><span>1100
-</span></span><span style="display:flex;"><span>1110
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>Try to minimize cache effects of the I/O to and from this
+</span></span><span style="display:flex;"><span>file.  In general this will degrade performance, but it is
+</span></span><span style="display:flex;"><span>useful in special situations, such as when applications do
+</span></span><span style="display:flex;"><span>their own caching.  File I/O is done directly to/from
+</span></span><span style="display:flex;"><span>user-space buffers.  The O_DIRECT flag on its own makes an
+</span></span><span style="display:flex;"><span>effort to transfer data synchronously, but does not give
+</span></span><span style="display:flex;"><span>the guarantees of the O_SYNC flag that data and necessary
+</span></span><span style="display:flex;"><span>metadata are transferred.  To guarantee synchronous I/O,
+</span></span><span style="display:flex;"><span>O_SYNC must be used in addition to O_DIRECT.  See NOTES
+</span></span><span style="display:flex;"><span>below for further discussion.
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>上面这些数位按位异或，就会得到0000,校验就会成功。</p>
+</div><p>大概翻译如下：</p>
+<blockquote>
+<p>尽量减少 <code>I/O</code> 的缓存效应到或者从这个文件。通常这回降低性能，但是在特殊的场景下，例如当应用做他自己的缓存时。文件的 I/O 直接到/从用户空间的缓存。<code>O_DIRECT flag</code> 它本身尽力去同步的传输数据，但是并不保证像 <code>O_SYNC flag</code> 那样数据和元数据都传输完成。为了保证同步 <code>I/O</code>，<code>O_SYNC</code> 也必须在 <code>O_DIRECT</code> 的基础上添加。</p>
+</blockquote>
+<p>理解：根据我们对文件系统的理解，平时我们的 write 操作把缓存里的东西拷贝到内核以后，需要等内核周期性的把脏页刷入磁盘，如果在这之前断电，我们的数据就丢失了。在打开文件的时候开启 <code>O_DIRECT</code> 之后，操作系统会跳过这个步骤，直接将文件放进磁盘中（尽量），按照字面描述的尽量，我理解这里面仍然有异步的可能性，例如：操作系统拿着缓存空间地址调用磁盘驱动等操作其实是异步的……（全凭臆想，没有看过操作系统相关的代码）</p>
+<p>当 <code>O_SYNC</code> 开启之后，才会保证数据和元数据同时到达磁盘。</p>
+<h2 id="0x01-align">0x01 align</h2>
+<p>根据我们对文件系统的了解，pagecache 就是一些用来给磁盘做缓存的空间，如果操作系统要把某些 page 写入磁盘时，这些 page 都是 4k 对齐的。当我们希望跳过 pagecache，直接和磁盘做 IO 的时候，内存 4k 对齐就需要我们自己去完成了。</p>
+<p><a class="link" href="https://www.quora.com/Why-does-O_DIRECT-require-I-O-to-be-512-byte-aligned"  target="_blank" rel="noopener"
+    >Quora 提问：Why does O_DIRECT require I/O to be 512-byte aligned?</a></p>
+<p>中 Robert Love 回答道：</p>
+<blockquote>
+<p>O_DIRECT requires that I/O occur in multiples of 512 bytes and from memory aligned on a 512-byte boundary because O_DIRECT performs &hellip;. usually larger than the sector size and 4KB. You can obtain a filesystem&rsquo;s logical block size with the BLKBSZGET ioctl.)</p>
+<p>&mdash; Robert Love</p>
+</blockquote>
+<p>我简单翻译一下：</p>
+<blockquote>
+<p><code>O_DIRECT</code> 要求 <code>I/O</code> 发生于 512Bytes 的倍数，并且从512Bytes对其的内存块上，因为 O_DIRECT 进行了 Direct Memory Access(DMA) 直连了后端的存储，绕过了任何的缓存。进行不对其的传输会要求“清理” I/O，通过显式的对齐的用户空间的缓存，并且填补空隙（在 buffer 结束到下一个 512 bytes 倍数的空间），这样会消除使用 O_DIRECT 的优点。</p>
+</blockquote>
+<blockquote>
+<p>从另一个角度来看这个问题，</p>
+</blockquote>
 <h2 id="0x02">0x02</h2>
-<p>书上说这么校验，但是我一直不知道为什么，知道看了茶谈硬件的视频以后才知道。</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>x</th>
-<th>1</th>
-<th>2</th>
-<th>3</th>
-<th>4</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td></td>
-<td>A0</td>
-<td>A1</td>
-<td>A2</td>
-<td>0</td>
-</tr>
-<tr>
-<td></td>
-<td>A4</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-<tr>
-<td></td>
-<td>A8</td>
-<td>0</td>
-<td>0</td>
-<td>1</td>
-</tr>
-<tr>
-<td></td>
-<td>1</td>
-<td>0</td>
-<td>1</td>
-<td>0</td>
-</tr>
-</tbody>
-</table></div>
-<p>刚才个表格是这样生成的，A1 是用来给</p>
 
 </section>
 

@@ -6,6 +6,68 @@
         <description>Recent content on Dashjay&#39;s</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>en-us</language><atom:link href="/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>DirectIO Flag 问题</title>
+        <link>/post/2022/09/10/open-direct-io-flag/</link>
+        <pubDate>Sat, 10 Sep 2022 11:27:44 +0800</pubDate>
+        
+        <guid>/post/2022/09/10/open-direct-io-flag/</guid>
+        <description>&lt;p&gt;最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 &lt;code&gt;blocksize=4M&lt;/code&gt; 的 &lt;code&gt;sync&lt;/code&gt; 写，到 &lt;code&gt;direct_io&lt;/code&gt; 的写，看看性能有多少提升。我以前对这个 &lt;code&gt;flag&lt;/code&gt; 的了解只有：它会跳过 &lt;code&gt;pagecache&lt;/code&gt;，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。&lt;/p&gt;
+&lt;h2 id=&#34;0x00-man-open&#34;&gt;0x00 man open&lt;/h2&gt;
+&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://man7.org/linux/man-pages/man2/open.2.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;open(2) linux manual page&lt;/a&gt;
+里面有对 O_DIRECT 的描述如下：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Try to minimize cache effects of the I/O to and from this
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;file.  In general this will degrade performance, but it is
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;useful in special situations, such as when applications do
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;their own caching.  File I/O is done directly to/from
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;user-space buffers.  The O_DIRECT flag on its own makes an
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;effort to transfer data synchronously, but does not give
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;the guarantees of the O_SYNC flag that data and necessary
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;metadata are transferred.  To guarantee synchronous I/O,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;O_SYNC must be used in addition to O_DIRECT.  See NOTES
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;below for further discussion.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;大概翻译如下：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;尽量减少 &lt;code&gt;I/O&lt;/code&gt; 的缓存效应到或者从这个文件。通常这回降低性能，但是在特殊的场景下，例如当应用做他自己的缓存时。文件的 I/O 直接到/从用户空间的缓存。&lt;code&gt;O_DIRECT flag&lt;/code&gt; 它本身尽力去同步的传输数据，但是并不保证像 &lt;code&gt;O_SYNC flag&lt;/code&gt; 那样数据和元数据都传输完成。为了保证同步 &lt;code&gt;I/O&lt;/code&gt;，&lt;code&gt;O_SYNC&lt;/code&gt; 也必须在 &lt;code&gt;O_DIRECT&lt;/code&gt; 的基础上添加。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;理解：根据我们对文件系统的理解，平时我们的 write 操作把缓存里的东西拷贝到内核以后，需要等内核周期性的把脏页刷入磁盘，如果在这之前断电，我们的数据就丢失了。在打开文件的时候开启 &lt;code&gt;O_DIRECT&lt;/code&gt; 之后，操作系统会跳过这个步骤，直接将文件放进磁盘中（尽量），按照字面描述的尽量，我理解这里面仍然有异步的可能性，例如：操作系统拿着缓存空间地址调用磁盘驱动等操作其实是异步的……（全凭臆想，没有看过操作系统相关的代码）&lt;/p&gt;
+&lt;p&gt;当 &lt;code&gt;O_SYNC&lt;/code&gt; 开启之后，才会保证数据和元数据同时到达磁盘。&lt;/p&gt;
+&lt;h2 id=&#34;0x01-align&#34;&gt;0x01 align&lt;/h2&gt;
+&lt;p&gt;根据我们对文件系统的了解，pagecache 就是一些用来给磁盘做缓存的空间，如果操作系统要把某些 page 写入磁盘时，这些 page 都是 4k 对齐的。当我们希望跳过 pagecache，直接和磁盘做 IO 的时候，内存 4k 对齐就需要我们自己去完成了。&lt;/p&gt;
+&lt;p&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.quora.com/Why-does-O_DIRECT-require-I-O-to-be-512-byte-aligned&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;Quora 提问：Why does O_DIRECT require I/O to be 512-byte aligned?&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;中 Robert Love 回答道：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;O_DIRECT requires that I/O occur in multiples of 512 bytes and from memory aligned on a 512-byte boundary because O_DIRECT performs &amp;hellip;. usually larger than the sector size and 4KB. You can obtain a filesystem&amp;rsquo;s logical block size with the BLKBSZGET ioctl.)&lt;/p&gt;
+&lt;p&gt;&amp;mdash; Robert Love&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;我简单翻译一下：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;code&gt;O_DIRECT&lt;/code&gt; 要求 &lt;code&gt;I/O&lt;/code&gt; 发生于 512Bytes 的倍数，并且从512Bytes对其的内存块上，因为 O_DIRECT 进行了 Direct Memory Access(DMA) 直连了后端的存储，绕过了任何的缓存。进行不对其的传输会要求“清理” I/O，通过显式的对齐的用户空间的缓存，并且填补空隙（在 buffer 结束到下一个 512 bytes 倍数的空间），这样会消除使用 O_DIRECT 的优点。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;从另一个角度来看这个问题，&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;0x02&#34;&gt;0x02&lt;/h2&gt;
+</description>
+        </item>
+        <item>
         <title>实现一个简单的对象存储</title>
         <link>/post/2022/09/10/implement-an-oss/</link>
         <pubDate>Sat, 10 Sep 2022 11:27:44 +0800</pubDate>
