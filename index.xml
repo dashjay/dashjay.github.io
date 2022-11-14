@@ -62,9 +62,58 @@
 &lt;p&gt;&lt;code&gt;O_DIRECT&lt;/code&gt; 要求 &lt;code&gt;I/O&lt;/code&gt; 发生于 512Bytes 的倍数，并且从512Bytes对其的内存块上，因为 O_DIRECT 进行了 Direct Memory Access(DMA) 直连了后端的存储，绕过了任何的缓存。进行不对其的传输会要求“清理” I/O，通过显式的对齐的用户空间的缓存，并且填补空隙（在 buffer 结束到下一个 512 bytes 倍数的空间），这样会消除使用 O_DIRECT 的优点。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;blockquote&gt;
-&lt;p&gt;从另一个角度来看这个问题，&lt;/p&gt;
+&lt;p&gt;从另一个角度来看这个问题，&lt;code&gt;O_DIRECT&lt;/code&gt; 的美在于他砍掉了 &lt;code&gt;I/O&lt;/code&gt; 过程使用的虚拟内存。没有从用户的内核空间拷贝，没有页缓存，没有 pages period。但是这意味着内核为你做所有小的事情——对齐是最大的一件你需要做的事情。底层的的存储期望所有的事情的都是以扇区（sector）为单位的，因此你也需要以扇区为单位和系统交流。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&#34;0x02&#34;&gt;0x02&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;那也是为什么这个魔数不一定总是 512 Bytes。他是底层块存储的扇区的尺寸。这个数字大多数时候都是 512 Bytes 在标准的硬件盘上，但是也会变化。例如，ISO 9660，CD-ROMs 是一个标准的格式，支持 2048 bytes 的扇区大小。你可以使用 BLKSSZGET ioctl 操作来获取底层的存储的扇区大小。可移植的代码应该使用 ioctl 返回的值，而不是硬编码 512Bytes。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;blockquote&gt;
+&lt;p&gt;由于历史原因，在 linux 内核中把 sector size 作为魔数。之前，O_DIRECT的调用需要对齐操作系统的逻辑 block size，通常会币 sector size 要大。你可以通过 ioctl BLKSBSZGET 获取文件系统的逻辑块大小&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;0x02-在-golang-中的使用&#34;&gt;0x02 在 Golang 中的使用&lt;/h2&gt;
+&lt;p&gt;先不说 golang，单纯的 O_DIRECT 的使用需要在 Open 文件的时候将对应的参数传入，然后用户在此模式下的写入需要手动保证几条对齐规则：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;IO 的大小必须对齐扇区大小（512字节）&lt;/li&gt;
+&lt;li&gt;IO 偏移（指针位置）必须按照扇区大小对齐&lt;/li&gt;
+&lt;li&gt;内存 buffer 的地址也必须是扇区对齐的；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;手动实现以上条件比较麻烦，有开源的库：&lt;a class=&#34;link&#34; href=&#34;https://github.com/ncw/directio&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://github.com/ncw/directio&lt;/a&gt;，这个仓库通过一些 hack 操作，在 golang 里面实现了满足上方条件的方法。&lt;/p&gt;
+&lt;h3 id=&#34;o_direct-打开&#34;&gt;O_DIRECT 打开&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;rfp, err := directio.OpenFile(file, os.O_RDONLY, 0666)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;wfp, err := directio.OpenFile(file, os.O_WRONLY, 0666)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;读取数据&#34;&gt;读取数据&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;buffer := directio.AlignedBlock(directio.BlockSize)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;_, err := io.ReadFull(rfp, buffer)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;写入数据&#34;&gt;写入数据&lt;/h3&gt;
+&lt;p&gt;wfp.Write(buffer)&lt;/p&gt;
+&lt;h2 id=&#34;参考&#34;&gt;参考&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://www.quora.com/Why-does-O_DIRECT-require-I-O-to-be-512-byte-aligned&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;(Quora)Why does O_DIRECT require I/O to be 512-byte aligned?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://man7.org/linux/man-pages/man2/open.2.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;(man page) linux man page&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://zhuanlan.zhihu.com/p/459311470&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;知乎 | Go 存储基础 | 怎么使用 direct io ？&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </description>
         </item>
         <item>
