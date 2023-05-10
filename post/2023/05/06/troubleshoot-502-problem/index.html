@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
+为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .'><title>定位 502 问题，最后竟然发现和交换机有关</title>
+
+<link rel='canonical' href='/post/2023/05/06/troubleshoot-502-problem/'>
+
+<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='定位 502 问题，最后竟然发现和交换机有关'>
+<meta property='og:description' content='0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
+为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .'>
+<meta property='og:url' content='/post/2023/05/06/troubleshoot-502-problem/'>
+<meta property='og:site_name' content='Dashjay&#39;s'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2023-05-10T05:14:18&#43;00:00'/>
+<meta name="twitter:title" content="定位 502 问题，最后竟然发现和交换机有关">
+<meta name="twitter:description" content="0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
+为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .">
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column compact"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="Toggle Menu">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Dashjay&#39;s</a></h1>
+            <h2 class="site-description"></h2>
+        </div>
+    </header><ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/' >
+                
+                
+                
+                <span>Home</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='https://learncppcn.github.io/' >
+                
+                
+                
+                <span>LearnCPP中文翻译</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about' >
+                
+                
+                
+                <span>About</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/open_source' >
+                
+                
+                
+                <span>Contribution</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>Dark Mode</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+<main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/post/2023/05/06/troubleshoot-502-problem/">定位 502 问题，最后竟然发现和交换机有关</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">May 06, 2023</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    6 minute read
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+</header>
+
+    <section class="article-content">
+    
+    
+    <h2 id="0x00-起因">0x00 起因</h2>
+<p>昨天有人报告说使用我们的服务间歇性抽风出现了一些 <code>502</code> 报错，查了一下 <code>kibana</code> 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：</p>
+<blockquote>
+<p>为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是<code>proxy</code>服务，下面替换为<code>ip-proxy</code>；和三个<code>backend</code>，但是他们位于一个交换机下，并且交换机给他们配置了一个<code>VIP</code>，我们称为，<code>ip-backend</code>。</p>
+</blockquote>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer
+</span></span><span style="display:flex;"><span>May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer
+</span></span><span style="display:flex;"><span>May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection
+</span></span><span style="display:flex;"><span>....
+</span></span><span style="display:flex;"><span>18.32.11:80: use of closed network connection
+</span></span><span style="display:flex;"><span>May 05 15:03:34 *: 2023/05/05 15:03:34 http: proxy error: readfrom tcp ip-proxy:56344-&gt;ip-backend:80: write tcp ip-proxy:56344-&gt;ip-backend:80: write: broken pipe
+</span></span><span style="display:flex;"><span>May 05 15:03:35 *: 2023/05/05 15:03:35 http: proxy error: readfrom tcp ip-proxy:56364-&gt;ip-backend:80: write tcp ip-proxy:56364-&gt;ip-backend:80: write: broken pipe
+</span></span><span style="display:flex;"><span>May 05 15:03:36 *: 2023/05/05 15:03:36 http: proxy error: readfrom tcp ip-proxy:56388-&gt;ip-backend:80: write tcp ip-proxy:56388-&gt;ip-backend:80: write: connection reset by peer
+</span></span><span style="display:flex;"><span>May 05 15:03:38 *: 2023/05/05 15:03:38 http: proxy error: readfrom tcp ip-proxy:56462-&gt;ip-backend:80: write tcp ip-proxy:56462-&gt;ip-backend:80: use of closed network connection
+</span></span><span style="display:flex;"><span>May 05 15:03:40 *: 2023/05/05 15:03:40 http: proxy error: readfrom tcp ip-proxy:56534-&gt;ip-backend:80: write tcp ip-proxy:56534-&gt;ip-backend:80: use of closed network connection
+</span></span><span style="display:flex;"><span>May 05 15:03:47 *: 2023/05/05 15:03:47 http: proxy error: readfrom tcp ip-proxy:56796-&gt;ip-backend:80: write tcp ip-proxy:56796-&gt;ip-backend:80: use of closed network connection
+</span></span><span style="display:flex;"><span>May 05 15:03:48 *: 2023/05/05 15:03:48 http: proxy error: readfrom tcp ip-proxy:56860-&gt;ip-backend:80: write tcp ip-proxy:56860-&gt;ip-backend:80: write: connection reset by peer
+</span></span><span style="display:flex;"><span>May 05 15:03:50 *: 2023/05/05 15:03:50 http: proxy error: readfrom tcp ip-proxy:56870-&gt;ip-backend:80: write tcp ip-proxy:56870-&gt;ip-backend:80: write: connection reset by peer
+</span></span><span style="display:flex;"><span>May 05 15:03:50 *: 2023/05/05 15:03:50 http: proxy error: readfrom tcp ip-proxy:56908-&gt;ip-backend:80: write tcp ip-proxy:56908-&gt;ip-backend:80: use of closed network connection
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>说实话，看到这个报错，我第一时间去看了我们代码，全文搜索过后，我并没有在任何地方返回 502。</p>
+<p>第一时间根据日志推测出来大致可能性： <code>proxy</code> 到3个 <code>backend</code> 的连接异常断开了，然后 <code>proxy</code> 中使用了 httputil.ReverseProxy 相关代码，内部有类似 Nginx 反向代理的逻辑，导致了这个问题，我开始在代码里翻找。</p>
+<h2 id="0x01-查代码冤假错案">0x01 查代码——冤假错案</h2>
+<p>我仔细观察代码，找到可能产生错误 close 连接的代码，并没有找到，然后突然我看到了这样的代码：</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">func</span> newProxyTransport() *http.Transport {
+</span></span><span style="display:flex;"><span>	<span style="color:#fff;font-weight:bold">return</span> &amp;http.Transport{
+</span></span><span style="display:flex;"><span>		DialContext: (&amp;net.Dialer{
+</span></span><span style="display:flex;"><span>			Timeout:   <span style="color:#ff0;font-weight:bold">10</span> * time.Second,
+</span></span><span style="display:flex;"><span>			KeepAlive: <span style="color:#ff0;font-weight:bold">100</span> * time.Second,
+</span></span><span style="display:flex;"><span>		}).DialContext,
+</span></span><span style="display:flex;"><span>		MaxIdleConns:          <span style="color:#ff0;font-weight:bold">4096</span>,
+</span></span><span style="display:flex;"><span>		MaxIdleConnsPerHost:   <span style="color:#ff0;font-weight:bold">4096</span>,
+</span></span><span style="display:flex;"><span>		IdleConnTimeout:       <span style="color:#ff0;font-weight:bold">90</span> * time.Second,
+</span></span><span style="display:flex;"><span>		TLSHandshakeTimeout:   <span style="color:#ff0;font-weight:bold">10</span> * time.Second,
+</span></span><span style="display:flex;"><span>		ExpectContinueTimeout: <span style="color:#ff0;font-weight:bold">1</span> * time.Second,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我发现 <code>KeepAlive</code> 比 <code>IdleConnTimeout</code> 时间长这并不符合逻辑基本逻辑，我特地看了 <code>Golang</code> 的 <code>doc</code>。</p>
+<p>KeepAlive：指定了内部两次网络探活检测的间隔。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">7
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>	// KeepAlive specifies the interval between keep-alive
+</span></span><span style="display:flex;"><span>	// probes for an active network connection.
+</span></span><span style="display:flex;"><span>	// If zero, keep-alive probes are sent with a default value
+</span></span><span style="display:flex;"><span>	// (currently 15 seconds), if supported by the protocol and operating
+</span></span><span style="display:flex;"><span>	// system. Network protocols or operating systems that do
+</span></span><span style="display:flex;"><span>	// not support keep-alives ignore this field.
+</span></span><span style="display:flex;"><span>	// If negative, keep-alive probes are disabled.
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>IdleConnTimeout：使用后在关闭前最大的空闲时间。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>	// IdleConnTimeout is the maximum amount of time an idle
+</span></span><span style="display:flex;"><span>	// (keep-alive) connection will remain idle before closing
+</span></span><span style="display:flex;"><span>	// itself.
+</span></span><span style="display:flex;"><span>	// Zero means no limit.
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我开始假想出现这样的问题：假设连接空闲了 <code>90</code> 秒，要被系统关闭，但是没有等到一次 <code>Keep-Alive</code> 检测，服务刚好要使用这个连接，连接就刚好关闭了，应该是偶发现象，心安理得，开始摸鱼。</p>
+<p>随后第二天来我发现事情越来越不可控了，<code>502</code> 的问题越来越多，我不得不继续排查，不得不选择最最最不想做的抓包……再额外交代一下背景就是这个破玩意儿流量非常大，几分钟就能抓几十个G的包。</p>
+<h3 id="0x02-抓包当面对峙">0x02 抓包——当面对峙</h3>
+<p>抓包是一个极其无聊的过程……，而且因为业务流量大、偶发（一个小时一次或几次）的问题，我不得不像守株待兔一样，盯着这破东西，我也想过用 <code>gopackage</code> 或者 <code>eBPF</code> 来写一些基础的 filter，最终还是决定就硬抓算了。</p>
+<p>每隔几分钟就开新的，并且关闭旧的抓包，这样 rotate 抓包，抓了不知道多久，日志里突然跳出来一个报错，<code>use of closed network</code>，我立马关闭抓包，可是还是抓了总计100多G的包……</p>
+<p>在三个 backend 节点上分别抓到30多G的包，管他的直接开撸，了解到报错的端口号之后：</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>tshark -r 001.cap -Y &#39;ip.addr==ip-proxy and tcp.port==49092&#39;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>3841744 220.895866 ip-proxy → ip-backend HTTP 3501 POST /xxxxxxxxxxxxxxxxxxxxxxxxx......
+</span></span><span style="display:flex;"><span>3841745 220.895866 ip-proxy → ip-backend TCP 3501 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=4161 Ack=1 Win=42496 Len=3433 TSval=1825820048 TSecr=2612233213
+</span></span><span style="display:flex;"><span>3841746 220.895879 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=1552 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841747 220.895880 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841746#1] 80 → 49092 [ACK] Seq=1 Ack=1552 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841748 220.895904 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=4161 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841749 220.895905 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841748#1] 80 → 49092 [ACK] Seq=1 Ack=4161 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841750 220.895937 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=7594 Win=34816 Len=0 TSval=2612233214 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841751 220.895938 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841750#1] 80 → 49092 [ACK] Seq=1 Ack=7594 Win=34816 Len=0 TSval=2612233214 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841803 220.901916 ip-backend → ip-proxy HTTP 1182 HTTP/1.1 200 OK  (text/plain)
+</span></span><span style="display:flex;"><span>3841805 220.901918 ip-backend → ip-proxy TCP 1182 [TCP Retransmission] 80 → 49092 [PSH, ACK] Seq=1 Ack=7594 Win=34816 Len=1114 TSval=2612233219 TSecr=1825820048
+</span></span><span style="display:flex;"><span>3841812 220.901996 ip-proxy → ip-backend TCP 68 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=0 TSval=1825820054 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3841813 220.901996 ip-proxy → ip-backend TCP 68 [TCP Dup ACK 3841812#1] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=0 TSval=1825820054 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3841962 220.904543 ip-proxy → ip-backend TCP 1516 POST /xxxxxxxxxxxxxxxxx HTTP/1.1  [TCP segment of a reassembled PDU]
+</span></span><span style="display:flex;"><span>3841963 220.904543 ip-proxy → ip-backend TCP 1516 [TCP Retransmission] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=1448 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3841964 220.904630 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1115 Ack=9042 Win=34816 Len=0 TSval=2612233222 TSecr=1825820057
+</span></span><span style="display:flex;"><span>3841965 220.904631 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841964#1] 80 → 49092 [ACK] Seq=1115 Ack=9042 Win=34816 Len=0 TSval=2612233222 TSecr=1825820057
+</span></span><span style="display:flex;"><span>3841966 220.904666 ip-proxy → ip-backend TCP 62 49092 → 80 [RST] Seq=9042 Win=0 Len=0
+</span></span><span style="display:flex;"><span>3841967 220.904666 ip-proxy → ip-backend TCP 62 49092 → 80 [RST] Seq=9042 Win=0 Len=0
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>通过 3841962，和63 这2行可以看到：<code>ip-proxy</code> 帮忙向 <code>ip-backend</code> 转发了一个 POST 请求，并且重传了一次，然后 <code>ip-backend</code> 向 <code>ip-proxy</code> 发送了两个 <code>ACK</code>，然后客户端的就 <code>RST</code> 了？？？？</p>
+<p>这是为什么？请求还没返回，百思不得其解！</p>
+<p>突然想到一个之前看过的文章</p>
+<p>文章在这里：<a class="link" href="https://zhuanlan.zhihu.com/p/422383933"  target="_blank" rel="noopener"
+    >动图图解！收到RST，就一定会断开TCP连接吗？—— 作者：小白debug</a></p>
+<p>文章传达了类似：RST 可以是攻击者伪造的这样的观点，我就在想，TCP 这种面向连接的传输协议没被挟持的情况下还能被第三方攻击？而且文章里面提到了出现RST的原因：“RST一般出现于异常情况，归类为 <strong>对端的端口不可用</strong> 和 <strong>socket提前关闭</strong>。”</p>
+<p>根据目前的情况来看，<code>ip-backend</code> 的服务端口是可用的，这个 <code>ip-proxy</code> 和 <code>ip-backend</code> 之间看起来似乎是，有一方先关闭了，从抓包来看，应该是 <code>ip-proxy</code> 这一方关闭了，导致 <code>ip-backend</code> 收到对方的 <code>ACK</code> 之后直接 RST 了。</p>
+<p>目前暂无头绪，画个图分析一下，大佬们博客中的说法。</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">11
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">12
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">13
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">14
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">15
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">16
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">17
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">18
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">19
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">20
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">21
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">22
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>┌───────────┐             ┌───────────┐            ┌───────────┐
+</span></span><span style="display:flex;"><span>│           │             │           │            │           │
+</span></span><span style="display:flex;"><span>│   Cliet   │             │   Proxy   │            │  Backend  │
+</span></span><span style="display:flex;"><span>│           │             │           │            │           │
+</span></span><span style="display:flex;"><span>└─────┬─────┘             └─────┬─────┘            └─────┬─────┘
+</span></span><span style="display:flex;"><span>      │        Request          │       Request          │
+</span></span><span style="display:flex;"><span>      ├───────────────────────► ├───────────────────────►│
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │        Response         │       Response         │
+</span></span><span style="display:flex;"><span>      │◄────────────────────────┤◄───────────────────────┤
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │x x x x x x x x x x x x x│x x x x x x x x x x x x │
+</span></span><span style="display:flex;"><span>      │        Request          │       Request          │
+</span></span><span style="display:flex;"><span>      ├───────────────────────► ├───────────────────────►│
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │        502              │       RST              │
+</span></span><span style="display:flex;"><span>      │◄────────────────────────┤◄───────────────────────┤
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span><span style="display:flex;"><span>      │                         │                        │
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可是为什么好端端的 Backend 要返回 RST 呢？</p>
+<p>又一次陷入了停滞……</p>
+<p>不过到目前为止我的认识还在应用层和传输层，从这两层来看，TCP 包被客户端 RST 了是百思不得其解的，我们可以大致认为有两种可能：</p>
+<ol>
+<li><code>Proxy</code> 的系统出现了一些问题，导致 <code>Backend</code> 发给 <code>Proxy</code> 的包被 <code>Proxy</code> 主动 RST 了</li>
+<li><code>Backned</code> 事先出了一些问题，给 <code>Proxy</code> 发了 <code>RST</code>，导致 <code>Proxy</code> 这边的连接被单方面断开</li>
+</ol>
+<p>如果是 1 的话，那么Proxy 这边的系统肯定有 Bug，频发连接失效导致直接发 RST（我通常是不会怀疑到操作系统上的）；</p>
+<p>那么只可能是 2，如果是 2 的话，Backend 向 Proxy 发的 RST 包应该被抓到呀，想到这里，我突然想到了一种可能性，我执行了如下命令：</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">6
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>tshark -r 002.cap -Y &#39;ip.addr==ip-proxy and tcp.port==49092&#39;
+</span></span><span style="display:flex;"><span>tshark -r 003.cap -Y &#39;ip.addr==ip-proxy and tcp.port==49092&#39;
+</span></span><span style="display:flex;"><span>3113698 215.885959 ip-proxy → ip-backend TCP 172 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3113699 215.885959 ip-proxy → ip-backend TCP 172 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3113700 215.885984 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+</span></span><span style="display:flex;"><span>3113701 215.885985 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在查询了2、3两个 Backend 两个节点上抓到的包，果然发现了端倪。</p>
+<p>我们仔细看三组抓包会发现：</p>
+<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 3
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 4
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 5
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 6
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 7
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 8
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 9
+</span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">10
+</span></code></pre></td>
+<td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>tshark -r 001.cap -Y &#39;ip.addr==ip-proxy and tcp.port==49092&#39;
+</span></span><span style="display:flex;"><span>.....
+</span></span><span style="display:flex;"><span>3841962 220.904543 ip-proxy → ip-backend TCP 1516 POST /xxxxxxxxxxxxxxxxx HTTP/1.1  [TCP segment of a reassembled PDU]
+</span></span><span style="display:flex;"><span>3841963 220.904543 ip-proxy → ip-backend TCP 1516 [TCP Retransmission] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=1448 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>.....
+</span></span><span style="display:flex;"><span>tshark -r 003.cap -Y &#39;ip.addr==ip-proxy and tcp.port==49092&#39;
+</span></span><span style="display:flex;"><span>3113698 215.885959 ip-proxy → ip-backend TCP 172 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3113699 215.885959 ip-proxy → ip-backend TCP 172 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+</span></span><span style="display:flex;"><span>3113700 215.885984 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+</span></span><span style="display:flex;"><span>3113701 215.885985 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里的 001.cap 和 003.cap 是在不同节点上抓到的，虽然它的 ip 都是 ip-backend，但是其实是指向不同节点的。</p>
+<p>仔细看上面的包会发现，ip-proxy 向ip-backend-01 号节点发了一个 POST 请求，长度为 1516，然后可能因为 MTU 是1500的原因？这个包被分成了两个部分，第一部分被正常的发给了 ip-backend-01 节点，然后紧接着第二段发到了 ip-backend-03 号节点上，该节点意识到这不是一个正常的已建立的连接之后，给返回了 RST，告诉对端你可能搞错了。然后紧接着 ip-proxy 就把该链接关闭了，结果刚好这时候 ip-backend-01 节点返回的 ACK 就被当做异常报文给 RST 了，整个转发过程就 502 了。</p>
+<p>咨询了一下运维，听说我们的交换机是 <code>Mellanox</code> 的软件交换机，对此并不了解，但是目前可以断定，应该是交换机等基础设施出了问题。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    <section class="article-lastmod">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <span>
+            Last updated on May 10, 2023 05:14 UTC
+        </span>
+    </section></footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2023 Dashjay&#39;s
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+        <br>
+        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+    
+
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

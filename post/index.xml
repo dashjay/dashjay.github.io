@@ -6,7 +6,297 @@
         <description>Recent content on Dashjay&#39;s</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>en-us</language>
-        <lastBuildDate>Sat, 10 Sep 2022 11:27:44 +0800</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Sat, 06 May 2023 11:27:44 +0800</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>定位 502 问题，最后竟然发现和交换机有关</title>
+        <link>/post/2023/05/06/troubleshoot-502-problem/</link>
+        <pubDate>Sat, 06 May 2023 11:27:44 +0800</pubDate>
+        
+        <guid>/post/2023/05/06/troubleshoot-502-problem/</guid>
+        <description>&lt;h2 id=&#34;0x00-起因&#34;&gt;0x00 起因&lt;/h2&gt;
+&lt;p&gt;昨天有人报告说使用我们的服务间歇性抽风出现了一些 &lt;code&gt;502&lt;/code&gt; 报错，查了一下 &lt;code&gt;kibana&lt;/code&gt; 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是&lt;code&gt;proxy&lt;/code&gt;服务，下面替换为&lt;code&gt;ip-proxy&lt;/code&gt;；和三个&lt;code&gt;backend&lt;/code&gt;，但是他们位于一个交换机下，并且交换机给他们配置了一个&lt;code&gt;VIP&lt;/code&gt;，我们称为，&lt;code&gt;ip-backend&lt;/code&gt;。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;11
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;12
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;13
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;....
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;18.32.11:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:34 *: 2023/05/05 15:03:34 http: proxy error: readfrom tcp ip-proxy:56344-&amp;gt;ip-backend:80: write tcp ip-proxy:56344-&amp;gt;ip-backend:80: write: broken pipe
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:35 *: 2023/05/05 15:03:35 http: proxy error: readfrom tcp ip-proxy:56364-&amp;gt;ip-backend:80: write tcp ip-proxy:56364-&amp;gt;ip-backend:80: write: broken pipe
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:36 *: 2023/05/05 15:03:36 http: proxy error: readfrom tcp ip-proxy:56388-&amp;gt;ip-backend:80: write tcp ip-proxy:56388-&amp;gt;ip-backend:80: write: connection reset by peer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:38 *: 2023/05/05 15:03:38 http: proxy error: readfrom tcp ip-proxy:56462-&amp;gt;ip-backend:80: write tcp ip-proxy:56462-&amp;gt;ip-backend:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:40 *: 2023/05/05 15:03:40 http: proxy error: readfrom tcp ip-proxy:56534-&amp;gt;ip-backend:80: write tcp ip-proxy:56534-&amp;gt;ip-backend:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:47 *: 2023/05/05 15:03:47 http: proxy error: readfrom tcp ip-proxy:56796-&amp;gt;ip-backend:80: write tcp ip-proxy:56796-&amp;gt;ip-backend:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:48 *: 2023/05/05 15:03:48 http: proxy error: readfrom tcp ip-proxy:56860-&amp;gt;ip-backend:80: write tcp ip-proxy:56860-&amp;gt;ip-backend:80: write: connection reset by peer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:50 *: 2023/05/05 15:03:50 http: proxy error: readfrom tcp ip-proxy:56870-&amp;gt;ip-backend:80: write tcp ip-proxy:56870-&amp;gt;ip-backend:80: write: connection reset by peer
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;May 05 15:03:50 *: 2023/05/05 15:03:50 http: proxy error: readfrom tcp ip-proxy:56908-&amp;gt;ip-backend:80: write tcp ip-proxy:56908-&amp;gt;ip-backend:80: use of closed network connection
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;说实话，看到这个报错，我第一时间去看了我们代码，全文搜索过后，我并没有在任何地方返回 502。&lt;/p&gt;
+&lt;p&gt;第一时间根据日志推测出来大致可能性： &lt;code&gt;proxy&lt;/code&gt; 到3个 &lt;code&gt;backend&lt;/code&gt; 的连接异常断开了，然后 &lt;code&gt;proxy&lt;/code&gt; 中使用了 httputil.ReverseProxy 相关代码，内部有类似 Nginx 反向代理的逻辑，导致了这个问题，我开始在代码里翻找。&lt;/p&gt;
+&lt;h2 id=&#34;0x01-查代码冤假错案&#34;&gt;0x01 查代码——冤假错案&lt;/h2&gt;
+&lt;p&gt;我仔细观察代码，找到可能产生错误 close 连接的代码，并没有找到，然后突然我看到了这样的代码：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;11
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;12
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#fff;font-weight:bold&#34;&gt;func&lt;/span&gt; newProxyTransport() *http.Transport {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#fff;font-weight:bold&#34;&gt;return&lt;/span&gt; &amp;amp;http.Transport{
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		DialContext: (&amp;amp;net.Dialer{
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;			Timeout:   &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;10&lt;/span&gt; * time.Second,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;			KeepAlive: &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;100&lt;/span&gt; * time.Second,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		}).DialContext,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		MaxIdleConns:          &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;4096&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		MaxIdleConnsPerHost:   &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;4096&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		IdleConnTimeout:       &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;90&lt;/span&gt; * time.Second,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		TLSHandshakeTimeout:   &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;10&lt;/span&gt; * time.Second,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		ExpectContinueTimeout: &lt;span style=&#34;color:#ff0;font-weight:bold&#34;&gt;1&lt;/span&gt; * time.Second,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;我发现 &lt;code&gt;KeepAlive&lt;/code&gt; 比 &lt;code&gt;IdleConnTimeout&lt;/code&gt; 时间长这并不符合逻辑基本逻辑，我特地看了 &lt;code&gt;Golang&lt;/code&gt; 的 &lt;code&gt;doc&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;KeepAlive：指定了内部两次网络探活检测的间隔。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// KeepAlive specifies the interval between keep-alive
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// probes for an active network connection.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// If zero, keep-alive probes are sent with a default value
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// (currently 15 seconds), if supported by the protocol and operating
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// system. Network protocols or operating systems that do
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// not support keep-alives ignore this field.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// If negative, keep-alive probes are disabled.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;IdleConnTimeout：使用后在关闭前最大的空闲时间。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// IdleConnTimeout is the maximum amount of time an idle
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// (keep-alive) connection will remain idle before closing
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// itself.
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	// Zero means no limit.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;我开始假想出现这样的问题：假设连接空闲了 &lt;code&gt;90&lt;/code&gt; 秒，要被系统关闭，但是没有等到一次 &lt;code&gt;Keep-Alive&lt;/code&gt; 检测，服务刚好要使用这个连接，连接就刚好关闭了，应该是偶发现象，心安理得，开始摸鱼。&lt;/p&gt;
+&lt;p&gt;随后第二天来我发现事情越来越不可控了，&lt;code&gt;502&lt;/code&gt; 的问题越来越多，我不得不继续排查，不得不选择最最最不想做的抓包……再额外交代一下背景就是这个破玩意儿流量非常大，几分钟就能抓几十个G的包。&lt;/p&gt;
+&lt;h3 id=&#34;0x02-抓包当面对峙&#34;&gt;0x02 抓包——当面对峙&lt;/h3&gt;
+&lt;p&gt;抓包是一个极其无聊的过程……，而且因为业务流量大、偶发（一个小时一次或几次）的问题，我不得不像守株待兔一样，盯着这破东西，我也想过用 &lt;code&gt;gopackage&lt;/code&gt; 或者 &lt;code&gt;eBPF&lt;/code&gt; 来写一些基础的 filter，最终还是决定就硬抓算了。&lt;/p&gt;
+&lt;p&gt;每隔几分钟就开新的，并且关闭旧的抓包，这样 rotate 抓包，抓了不知道多久，日志里突然跳出来一个报错，&lt;code&gt;use of closed network&lt;/code&gt;，我立马关闭抓包，可是还是抓了总计100多G的包……&lt;/p&gt;
+&lt;p&gt;在三个 backend 节点上分别抓到30多G的包，管他的直接开撸，了解到报错的端口号之后：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;11
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;12
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;13
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;14
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;15
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;16
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;17
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;18
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;19
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;20
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;21
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tshark -r 001.cap -Y &amp;#39;ip.addr==ip-proxy and tcp.port==49092&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841744 220.895866 ip-proxy → ip-backend HTTP 3501 POST /xxxxxxxxxxxxxxxxxxxxxxxxx......
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841745 220.895866 ip-proxy → ip-backend TCP 3501 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=4161 Ack=1 Win=42496 Len=3433 TSval=1825820048 TSecr=2612233213
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841746 220.895879 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=1552 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841747 220.895880 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841746#1] 80 → 49092 [ACK] Seq=1 Ack=1552 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841748 220.895904 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=4161 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841749 220.895905 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841748#1] 80 → 49092 [ACK] Seq=1 Ack=4161 Win=34816 Len=0 TSval=2612233213 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841750 220.895937 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1 Ack=7594 Win=34816 Len=0 TSval=2612233214 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841751 220.895938 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841750#1] 80 → 49092 [ACK] Seq=1 Ack=7594 Win=34816 Len=0 TSval=2612233214 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841803 220.901916 ip-backend → ip-proxy HTTP 1182 HTTP/1.1 200 OK  (text/plain)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841805 220.901918 ip-backend → ip-proxy TCP 1182 [TCP Retransmission] 80 → 49092 [PSH, ACK] Seq=1 Ack=7594 Win=34816 Len=1114 TSval=2612233219 TSecr=1825820048
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841812 220.901996 ip-proxy → ip-backend TCP 68 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=0 TSval=1825820054 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841813 220.901996 ip-proxy → ip-backend TCP 68 [TCP Dup ACK 3841812#1] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=0 TSval=1825820054 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841962 220.904543 ip-proxy → ip-backend TCP 1516 POST /xxxxxxxxxxxxxxxxx HTTP/1.1  [TCP segment of a reassembled PDU]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841963 220.904543 ip-proxy → ip-backend TCP 1516 [TCP Retransmission] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=1448 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841964 220.904630 ip-backend → ip-proxy TCP 68 80 → 49092 [ACK] Seq=1115 Ack=9042 Win=34816 Len=0 TSval=2612233222 TSecr=1825820057
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841965 220.904631 ip-backend → ip-proxy TCP 68 [TCP Dup ACK 3841964#1] 80 → 49092 [ACK] Seq=1115 Ack=9042 Win=34816 Len=0 TSval=2612233222 TSecr=1825820057
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841966 220.904666 ip-proxy → ip-backend TCP 62 49092 → 80 [RST] Seq=9042 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841967 220.904666 ip-proxy → ip-backend TCP 62 49092 → 80 [RST] Seq=9042 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;通过 3841962，和63 这2行可以看到：&lt;code&gt;ip-proxy&lt;/code&gt; 帮忙向 &lt;code&gt;ip-backend&lt;/code&gt; 转发了一个 POST 请求，并且重传了一次，然后 &lt;code&gt;ip-backend&lt;/code&gt; 向 &lt;code&gt;ip-proxy&lt;/code&gt; 发送了两个 &lt;code&gt;ACK&lt;/code&gt;，然后客户端的就 &lt;code&gt;RST&lt;/code&gt; 了？？？？&lt;/p&gt;
+&lt;p&gt;这是为什么？请求还没返回，百思不得其解！&lt;/p&gt;
+&lt;p&gt;突然想到一个之前看过的文章&lt;/p&gt;
+&lt;p&gt;文章在这里：&lt;a class=&#34;link&#34; href=&#34;https://zhuanlan.zhihu.com/p/422383933&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;动图图解！收到RST，就一定会断开TCP连接吗？—— 作者：小白debug&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;文章传达了类似：RST 可以是攻击者伪造的这样的观点，我就在想，TCP 这种面向连接的传输协议没被挟持的情况下还能被第三方攻击？而且文章里面提到了出现RST的原因：“RST一般出现于异常情况，归类为 &lt;strong&gt;对端的端口不可用&lt;/strong&gt; 和 &lt;strong&gt;socket提前关闭&lt;/strong&gt;。”&lt;/p&gt;
+&lt;p&gt;根据目前的情况来看，&lt;code&gt;ip-backend&lt;/code&gt; 的服务端口是可用的，这个 &lt;code&gt;ip-proxy&lt;/code&gt; 和 &lt;code&gt;ip-backend&lt;/code&gt; 之间看起来似乎是，有一方先关闭了，从抓包来看，应该是 &lt;code&gt;ip-proxy&lt;/code&gt; 这一方关闭了，导致 &lt;code&gt;ip-backend&lt;/code&gt; 收到对方的 &lt;code&gt;ACK&lt;/code&gt; 之后直接 RST 了。&lt;/p&gt;
+&lt;p&gt;目前暂无头绪，画个图分析一下，大佬们博客中的说法。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;11
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;12
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;13
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;14
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;15
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;16
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;17
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;18
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;19
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;20
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;21
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;22
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;┌───────────┐             ┌───────────┐            ┌───────────┐
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│           │             │           │            │           │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│   Cliet   │             │   Proxy   │            │  Backend  │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;│           │             │           │            │           │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;└─────┬─────┘             └─────┬─────┘            └─────┬─────┘
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │        Request          │       Request          │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      ├───────────────────────► ├───────────────────────►│
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │        Response         │       Response         │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │◄────────────────────────┤◄───────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │x x x x x x x x x x x x x│x x x x x x x x x x x x │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │        Request          │       Request          │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      ├───────────────────────► ├───────────────────────►│
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │        502              │       RST              │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │◄────────────────────────┤◄───────────────────────┤
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;      │                         │                        │
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;可是为什么好端端的 Backend 要返回 RST 呢？&lt;/p&gt;
+&lt;p&gt;又一次陷入了停滞……&lt;/p&gt;
+&lt;p&gt;不过到目前为止我的认识还在应用层和传输层，从这两层来看，TCP 包被客户端 RST 了是百思不得其解的，我们可以大致认为有两种可能：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;Proxy&lt;/code&gt; 的系统出现了一些问题，导致 &lt;code&gt;Backend&lt;/code&gt; 发给 &lt;code&gt;Proxy&lt;/code&gt; 的包被 &lt;code&gt;Proxy&lt;/code&gt; 主动 RST 了&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Backned&lt;/code&gt; 事先出了一些问题，给 &lt;code&gt;Proxy&lt;/code&gt; 发了 &lt;code&gt;RST&lt;/code&gt;，导致 &lt;code&gt;Proxy&lt;/code&gt; 这边的连接被单方面断开&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;如果是 1 的话，那么Proxy 这边的系统肯定有 Bug，频发连接失效导致直接发 RST（我通常是不会怀疑到操作系统上的）；&lt;/p&gt;
+&lt;p&gt;那么只可能是 2，如果是 2 的话，Backend 向 Proxy 发的 RST 包应该被抓到呀，想到这里，我突然想到了一种可能性，我执行了如下命令：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tshark -r 002.cap -Y &amp;#39;ip.addr==ip-proxy and tcp.port==49092&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tshark -r 003.cap -Y &amp;#39;ip.addr==ip-proxy and tcp.port==49092&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113698 215.885959 ip-proxy → ip-backend TCP 172 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113699 215.885959 ip-proxy → ip-backend TCP 172 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113700 215.885984 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113701 215.885985 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;在查询了2、3两个 Backend 两个节点上抓到的包，果然发现了端倪。&lt;/p&gt;
+&lt;p&gt;我们仔细看三组抓包会发现：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
+&lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 1
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 2
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 3
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 4
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 5
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 6
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 7
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 8
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt; 9
+&lt;/span&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;;width:100%&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tshark -r 001.cap -Y &amp;#39;ip.addr==ip-proxy and tcp.port==49092&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;.....
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841962 220.904543 ip-proxy → ip-backend TCP 1516 POST /xxxxxxxxxxxxxxxxx HTTP/1.1  [TCP segment of a reassembled PDU]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3841963 220.904543 ip-proxy → ip-backend TCP 1516 [TCP Retransmission] 49092 → 80 [ACK] Seq=7594 Ack=1115 Win=42496 Len=1448 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;.....
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;tshark -r 003.cap -Y &amp;#39;ip.addr==ip-proxy and tcp.port==49092&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113698 215.885959 ip-proxy → ip-backend TCP 172 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113699 215.885959 ip-proxy → ip-backend TCP 172 [TCP Retransmission] 49092 → 80 [PSH, ACK] Seq=1 Ack=1 Win=83 Len=104 TSval=1825820057 TSecr=2612233219
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113700 215.885984 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;3113701 215.885985 ip-backend → ip-proxy TCP 56 80 → 49092 [RST] Seq=1 Win=0 Len=0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这里的 001.cap 和 003.cap 是在不同节点上抓到的，虽然它的 ip 都是 ip-backend，但是其实是指向不同节点的。&lt;/p&gt;
+&lt;p&gt;仔细看上面的包会发现，ip-proxy 向ip-backend-01 号节点发了一个 POST 请求，长度为 1516，然后可能因为 MTU 是1500的原因？这个包被分成了两个部分，第一部分被正常的发给了 ip-backend-01 节点，然后紧接着第二段发到了 ip-backend-03 号节点上，该节点意识到这不是一个正常的已建立的连接之后，给返回了 RST，告诉对端你可能搞错了。然后紧接着 ip-proxy 就把该链接关闭了，结果刚好这时候 ip-backend-01 节点返回的 ACK 就被当做异常报文给 RST 了，整个转发过程就 502 了。&lt;/p&gt;
+&lt;p&gt;咨询了一下运维，听说我们的交换机是 &lt;code&gt;Mellanox&lt;/code&gt; 的软件交换机，对此并不了解，但是目前可以断定，应该是交换机等基础设施出了问题。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>DirectIO Flag 问题</title>
         <link>/post/2022/09/10/open-direct-io-flag/</link>
         <pubDate>Sat, 10 Sep 2022 11:27:44 +0800</pubDate>
