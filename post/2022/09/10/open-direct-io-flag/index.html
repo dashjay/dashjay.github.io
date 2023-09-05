@@ -13,7 +13,7 @@
 1 2 3 4 5 6 7 8 9 10 Try to minimize cache effects of the I/O to and from this file. In general this will degrade performance, but it is useful in special situations, such as when applications do their own caching. File I/O is done directly to/from user-space buffers.'>
 <meta property='og:url' content='/post/2022/09/10/open-direct-io-flag/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-09-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2023-05-10T05:14:18&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-09-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2023-09-05T08:48:51&#43;00:00'/>
 <meta name="twitter:title" content="DirectIO Flag 问题">
 <meta name="twitter:description" content="最近 Trans 到一个存储部门，老板希望我能改造一下块存储的IO模型，从 blocksize=4M 的 sync 写，到 direct_io 的写，看看性能有多少提升。我以前对这个 flag 的了解只有：它会跳过 pagecache，但是并不知道这个有多少作用，有哪些优点和缺点等等，今天查资料好好看一下，然后总结一下。
 0x00 man open open(2) linux manual page 里面有对 O_DIRECT 的描述如下：
@@ -326,7 +326,7 @@
 
 
         <span>
-            Last updated on May 10, 2023 05:14 UTC
+            Last updated on Sep 05, 2023 08:48 UTC
         </span>
     </section></footer>
 
