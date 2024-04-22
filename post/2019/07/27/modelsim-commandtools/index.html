@@ -10,7 +10,7 @@
 <meta property='og:description' content="本文最后修改于 2020-12-31 本人在本科期间有学一门课程叫做数字逻辑，这是一门从与或门开始，一直到加法器等普通电子器件，最终实现一个 CPU 的课程。课程内使用的是一个叫 Vivado 的电路设计，仿真综合软件。我私下一直使用的是iverilog进行的仿真，生成vvp可执行文件之后运行得到结果，因为方便。 我一般会写这样的Makefile 1 2 3 4 5 6 7 8 9 10 11 12 all: cmp vvp lxt cmp: iverilog *.v -o tb_top.vvp vvp: vvp tb_top.vvp lxt: cat top.lxt clean: @rm -rf tb_top.vvp tb_top.lxt 有了以上 Makefile ，将 *.v文件和 Makefile 放在一起，执行 make 命令即可完成相应操作 但是用这种方式，生成的波形只能使用GTKwave来查看，并且当有一些复杂的情况出现时候，iverilog就无法处理了，所以我们使用Intel提供的免费的Modelsim来完成仿真，仿真资料比较少，全是图形化界面的介绍，道路坎坷。 # 0x0：下载全套工具 我在 intel 官网下载了 lite 版本，最小套装，大同小异，包大小 100 多 M，这里就不留源文件了。 我下载的是：Quartus-lite-18.1.0.625-linux.tar # 0x1：安装 解压之后有一键安装脚本，运行的时候会提示缺库，安装对应的库文件就可以使用了。 # 0x2：仿真出波形 # 0x21. vlog工具 路径位于 intelFPGA_lite/18.1/modelsim_ase/bin/vlog 执行 *vlog .">
 <meta property='og:url' content='/post/2019/07/27/modelsim-commandtools/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='verilog' /><meta property='article:tag' content='HDL' /><meta property='article:published_time' content='2019-07-27T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='verilog' /><meta property='article:tag' content='HDL' /><meta property='article:published_time' content='2019-07-27T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:35:26&#43;00:00'/>
 <meta name="twitter:title" content="使用 Modelsim 中的 CommandTools 进行仿真">
 <meta name="twitter:description" content="本文最后修改于 2020-12-31 本人在本科期间有学一门课程叫做数字逻辑，这是一门从与或门开始，一直到加法器等普通电子器件，最终实现一个 CPU 的课程。课程内使用的是一个叫 Vivado 的电路设计，仿真综合软件。我私下一直使用的是iverilog进行的仿真，生成vvp可执行文件之后运行得到结果，因为方便。 我一般会写这样的Makefile 1 2 3 4 5 6 7 8 9 10 11 12 all: cmp vvp lxt cmp: iverilog *.v -o tb_top.vvp vvp: vvp tb_top.vvp lxt: cat top.lxt clean: @rm -rf tb_top.vvp tb_top.lxt 有了以上 Makefile ，将 *.v文件和 Makefile 放在一起，执行 make 命令即可完成相应操作 但是用这种方式，生成的波形只能使用GTKwave来查看，并且当有一些复杂的情况出现时候，iverilog就无法处理了，所以我们使用Intel提供的免费的Modelsim来完成仿真，仿真资料比较少，全是图形化界面的介绍，道路坎坷。 # 0x0：下载全套工具 我在 intel 官网下载了 lite 版本，最小套装，大同小异，包大小 100 多 M，这里就不留源文件了。 我下载的是：Quartus-lite-18.1.0.625-linux.tar # 0x1：安装 解压之后有一键安装脚本，运行的时候会提示缺库，安装对应的库文件就可以使用了。 # 0x2：仿真出波形 # 0x21. vlog工具 路径位于 intelFPGA_lite/18.1/modelsim_ase/bin/vlog 执行 *vlog .">
   
@@ -460,7 +460,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:19 UTC
+            Last updated on Apr 22, 2024 08:35 UTC
         </span>
     </section></footer>
 

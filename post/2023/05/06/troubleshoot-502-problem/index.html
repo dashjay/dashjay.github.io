@@ -10,7 +10,7 @@
 <meta property='og:description' content="# 0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志： 为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。 1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection .">
 <meta property='og:url' content='/post/2023/05/06/troubleshoot-502-problem/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:35:26&#43;00:00'/>
 <meta name="twitter:title" content="定位 502 问题，最后竟然发现和交换机有关">
 <meta name="twitter:description" content="# 0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志： 为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。 1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection .">
   
@@ -507,7 +507,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:19 UTC
+            Last updated on Apr 22, 2024 08:35 UTC
         </span>
     </section></footer>
 
