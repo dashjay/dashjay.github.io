@@ -47,7 +47,7 @@ leafgithub.com
 Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan ch := make(chan int, 5) 这个管道有点像。'>
 <meta property='og:url' content='/post/2019/12/03/websocket/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-09-05T08:48:51&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
 <meta name="twitter:title" content="基于Websocket的消息传输系统">
 <meta name="twitter:description" content="更新于 2020-12-31
 鄙人就是普通本科生，编码水平谦虚，大多数代码源自其他项目，比如一个叫leaf的游戏框架。
@@ -69,6 +69,9 @@ leafgithub.com
 注意，Client我们存的是指针，因此在这里并没有太多冗余，我只是为了方便找用户，而且不用再遍历。
 这里大家有没有注意到一个好玩的东西叫做chan ，这个东西在C/C&#43;&#43;里叫做pipe，但是我个人觉得在go里爽的不止那么一点点，有这个东西，我的思路清晰多了。
 Golang 给我们提供了一个类似于管道的东西，目的是进行协程间通信。我们先假装自己不知道goroutine这个东西，我们就可以认为 go produce(ch) 就相当于手动执行了一个程序，传入了我们事先 make 的一个长度（缓冲长度）为 5 的chan ch := make(chan int, 5) 这个管道有点像。">
+  
+
+
     </head>
     <body class="
     article-page
@@ -175,6 +178,25 @@ Golang 给我们提供了一个类似于管道的东西，目的是进行协程�
         
 
         <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="/" selected></option>
+                        
+                    </select>
+                </li>
+            
             
             
                 <li id="dark-mode-toggle">
@@ -209,7 +231,7 @@ Golang 给我们提供了一个类似于管道的东西，目的是进行协程�
     <header class="article-category">
         
             <a href="/categories/golang/" >
-                golang
+                Golang
             </a>
         
             <a href="/categories/websokcet/" >
@@ -808,7 +830,7 @@ Golang 给我们提供了一个类似于管道的东西，目的是进行协程�
 
 
         <span>
-            Last updated on Sep 05, 2023 08:48 UTC
+            Last updated on Apr 22, 2024 08:02 UTC
         </span>
     </section></footer>
 
@@ -829,7 +851,7 @@ Golang 给我们提供了一个类似于管道的东西，目的是进行协程�
     <section class="copyright">
         &copy; 
         
-        2023 Dashjay&#39;s
+        2024 Dashjay&#39;s
     </section>
     
     <section class="powerby">

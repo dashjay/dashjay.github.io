@@ -23,7 +23,7 @@ Let&amp;rsquo;s do it
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &amp;#34;c&#43;&#43;&amp;#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &amp;#34;;&amp;#34; &amp;#34; &amp;#34; CMAKE_CXX_FLAGS &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) message(STATUS &amp;#34;CMAKE_CXX_FLAGS: &amp;#34; &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) # 添加一个可执行文件 add_executable(main main.'>
 <meta property='og:url' content='/post/2020/07/31/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%80/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-31T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-09-05T08:48:51&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-31T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
 <meta name="twitter:title" content="手动用cpp实现http(一)">
 <meta name="twitter:description" content="创建于 2020-07-31，最终修订于 2020-08-06
 在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP，
@@ -33,6 +33,9 @@ Let&amp;rsquo;s do it
 0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&amp;lt;iostream&amp;gt; int main(){ std::cout &amp;lt;&amp;lt; &amp;#34;Hello World!&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 我们本可以使用如下命令进行编译并且运行
 1 2 3 g&#43;&#43; -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1]
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &amp;#34;c&#43;&#43;&amp;#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &amp;#34;;&amp;#34; &amp;#34; &amp;#34; CMAKE_CXX_FLAGS &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) message(STATUS &amp;#34;CMAKE_CXX_FLAGS: &amp;#34; &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) # 添加一个可执行文件 add_executable(main main.">
+  
+
+
     </head>
     <body class="
     article-page
@@ -139,6 +142,25 @@ Let&amp;rsquo;s do it
         
 
         <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="/" selected></option>
+                        
+                    </select>
+                </li>
+            
             
             
                 <li id="dark-mode-toggle">
@@ -238,7 +260,7 @@ Let&amp;rsquo;s do it
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">5
 </span></code></pre></td>
 <td style="vertical-align:top;padding:0;margin:0;border:0;;width:100%">
-<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#0f0;font-weight:bold">#include</span><span style="color:#0f0;font-weight:bold">&lt;iostream&gt;</span><span style="color:#0f0;font-weight:bold">
+<pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#0f0;font-weight:bold">#include&lt;iostream&gt;
 </span></span></span><span style="display:flex;"><span><span style="color:#0f0;font-weight:bold"></span>
 </span></span><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">int</span> main(){
 </span></span><span style="display:flex;"><span>    std::cout &lt;&lt; <span style="color:#0ff;font-weight:bold">&#34;Hello World!&#34;</span> &lt;&lt; <span style="color:#0ff;font-weight:bold">&#39;\n&#39;</span>;
@@ -724,7 +746,7 @@ Let&amp;rsquo;s do it
 
 
         <span>
-            Last updated on Sep 05, 2023 08:48 UTC
+            Last updated on Apr 22, 2024 08:02 UTC
         </span>
     </section></footer>
 
@@ -745,7 +767,7 @@ Let&amp;rsquo;s do it
     <section class="copyright">
         &copy; 
         
-        2023 Dashjay&#39;s
+        2024 Dashjay&#39;s
     </section>
     
     <section class="powerby">

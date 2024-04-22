@@ -29,7 +29,7 @@
 具体工程实现再继续讨论吧。'>
 <meta property='og:url' content='/post/2020/10/25/%E7%94%A8%E5%B0%8F%E5%86%85%E5%AD%98%E8%81%9A%E5%90%88%E9%9D%9E%E5%B8%B8%E5%A4%A7%E9%87%8F%E7%9A%84%E6%97%A5%E5%BF%97/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-09-05T08:48:51&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
 <meta name="twitter:title" content="用小内存聚合非常大量的日志">
 <meta name="twitter:description" content="0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：
 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘
@@ -42,6 +42,9 @@
 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。
 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。
 具体工程实现再继续讨论吧。">
+  
+
+
     </head>
     <body class="
     article-page
@@ -148,6 +151,25 @@
         
 
         <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="/" selected></option>
+                        
+                    </select>
+                </li>
+            
             
             
                 <li id="dark-mode-toggle">
@@ -289,7 +311,7 @@
 
 
         <span>
-            Last updated on Sep 05, 2023 08:48 UTC
+            Last updated on Apr 22, 2024 08:02 UTC
         </span>
     </section></footer>
 
@@ -310,7 +332,7 @@
     <section class="copyright">
         &copy; 
         
-        2023 Dashjay&#39;s
+        2024 Dashjay&#39;s
     </section>
     
     <section class="powerby">

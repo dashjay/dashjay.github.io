@@ -25,7 +25,7 @@ Pid 障眼法 我们知道在 Linux 中，启动进程需要使用函数（系�
 Mount Namespace 让你的进程以为自己有根目录，其实那只不过是挂载了一个目录目录到进程的根目录。 Network Namespace 让你的进程隔离于其他网路设备，只能看到你为它连接的网络设备。 User Namespace 将本地的虚拟 user-id 映射到真实的 user-id 中。 包括就连主机名等等其他资源，也可以用障眼法隔离起来，只要理解了，就不会觉得 Docker 很神奇了。'>
 <meta property='og:url' content='/post/2021/01/13/how-docker-plays/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='docker' /><meta property='article:tag' content='kubernetes' /><meta property='article:tag' content='Linux Namespace' /><meta property='article:published_time' content='2021-01-13T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-09-05T08:48:51&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='docker' /><meta property='article:tag' content='kubernetes' /><meta property='article:tag' content='Linux Namespace' /><meta property='article:published_time' content='2021-01-13T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
 <meta name="twitter:title" content="Docker 玩的障眼法">
 <meta name="twitter:description" content="刚刚入手docker会感觉有点像虚拟机，但是又有许多不同，一查资料都在说虚拟机虚拟了磁盘/CPU&amp;hellip;，docker轻量但是基本没说究竟怎么回事。 今天学习了 Docker 的一些实现细节之后，发现这些只不过都是 Docker 或者说 Linux 玩的障眼法，让我们来看一眼。
 容器是什么？ 容器其实就是在操作系统启动进程的时候，通过附加 一些参数，利用操作系统提供的接口来 隔离不相关资源，最后得到一个特殊的进程。
@@ -36,6 +36,9 @@ Pid 障眼法 我们知道在 Linux 中，启动进程需要使用函数（系�
 这是 Linux 中的一个叫 Namespace的机制
 障眼法的更优解释（命名空间） 所以当你理解了进程 Namespace 的时候，你就会明白，其实并没有容器。Docker 帮你启动你的进程的同时，使用了操作系统提供的命名空间限制，让你的进程以为自己在一个独立的空间中。
 Mount Namespace 让你的进程以为自己有根目录，其实那只不过是挂载了一个目录目录到进程的根目录。 Network Namespace 让你的进程隔离于其他网路设备，只能看到你为它连接的网络设备。 User Namespace 将本地的虚拟 user-id 映射到真实的 user-id 中。 包括就连主机名等等其他资源，也可以用障眼法隔离起来，只要理解了，就不会觉得 Docker 很神奇了。">
+  
+
+
     </head>
     <body class="
     article-page
@@ -142,6 +145,25 @@ Mount Namespace 让你的进程以为自己有根目录，其实那只不过是�
         
 
         <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="/" selected></option>
+                        
+                    </select>
+                </li>
+            
             
             
                 <li id="dark-mode-toggle">
@@ -278,9 +300,9 @@ Mount Namespace 让你的进程以为自己有根目录，其实那只不过是�
     
     <section class="article-tags">
         
-            <a href="/tags/docker/">docker</a>
+            <a href="/tags/docker/">Docker</a>
         
-            <a href="/tags/kubernetes/">kubernetes</a>
+            <a href="/tags/kubernetes/">Kubernetes</a>
         
             <a href="/tags/linux-namespace/">Linux Namespace</a>
         
@@ -297,7 +319,7 @@ Mount Namespace 让你的进程以为自己有根目录，其实那只不过是�
 
 
         <span>
-            Last updated on Sep 05, 2023 08:48 UTC
+            Last updated on Apr 22, 2024 08:02 UTC
         </span>
     </section></footer>
 
@@ -318,7 +340,7 @@ Mount Namespace 让你的进程以为自己有根目录，其实那只不过是�
     <section class="copyright">
         &copy; 
         
-        2023 Dashjay&#39;s
+        2024 Dashjay&#39;s
     </section>
     
     <section class="powerby">

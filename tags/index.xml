@@ -7,7 +7,7 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>en-us</language>
         <lastBuildDate>Sun, 23 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>wine</title>
+        <title>Wine</title>
         <link>/tags/wine/</link>
         <pubDate>Sun, 23 May 2021 00:00:00 +0000</pubDate>
         
@@ -15,7 +15,7 @@
         <description></description>
         </item>
         <item>
-        <title>docker</title>
+        <title>Docker</title>
         <link>/tags/docker/</link>
         <pubDate>Wed, 13 Jan 2021 00:00:00 +0000</pubDate>
         
@@ -23,7 +23,7 @@
         <description></description>
         </item>
         <item>
-        <title>kubernetes</title>
+        <title>Kubernetes</title>
         <link>/tags/kubernetes/</link>
         <pubDate>Wed, 13 Jan 2021 00:00:00 +0000</pubDate>
         
@@ -39,7 +39,7 @@
         <description></description>
         </item>
         <item>
-        <title>aircrack-ng</title>
+        <title>Aircrack-Ng</title>
         <link>/tags/aircrack-ng/</link>
         <pubDate>Thu, 19 Sep 2019 00:00:00 +0000</pubDate>
         
@@ -47,7 +47,7 @@
         <description></description>
         </item>
         <item>
-        <title>wireshark</title>
+        <title>Wireshark</title>
         <link>/tags/wireshark/</link>
         <pubDate>Thu, 19 Sep 2019 00:00:00 +0000</pubDate>
         
@@ -63,7 +63,7 @@
         <description></description>
         </item>
         <item>
-        <title>verilog</title>
+        <title>Verilog</title>
         <link>/tags/verilog/</link>
         <pubDate>Mon, 02 Sep 2019 00:00:00 +0000</pubDate>
         
