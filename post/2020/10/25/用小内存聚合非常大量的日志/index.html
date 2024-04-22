@@ -1,47 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：
-1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘
-最终结果输出大约是这样
-1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。
-0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。
-我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。
-0x2 指针 &#43; LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。
-0x3 建堆 上面的 指针 &#43; LFU 确实挺工程的，我认为已经非常聪明了。
-我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。
-首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。
-具体工程实现再继续讨论吧。'><title>用小内存聚合非常大量的日志</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# 0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下： 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘 最终结果输出大约是这样 1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。 # 0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。 我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。 # 0x2 指针 + LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。 # 0x3 建堆 上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。 具体工程实现再继续讨论吧。">
+<title>用小内存聚合非常大量的日志</title>
 
 <link rel='canonical' href='/post/2020/10/25/%E7%94%A8%E5%B0%8F%E5%86%85%E5%AD%98%E8%81%9A%E5%90%88%E9%9D%9E%E5%B8%B8%E5%A4%A7%E9%87%8F%E7%9A%84%E6%97%A5%E5%BF%97/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='用小内存聚合非常大量的日志'>
-<meta property='og:description' content='0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：
-1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘
-最终结果输出大约是这样
-1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。
-0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。
-我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。
-0x2 指针 &#43; LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。
-0x3 建堆 上面的 指针 &#43; LFU 确实挺工程的，我认为已经非常聪明了。
-我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。
-首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。
-具体工程实现再继续讨论吧。'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="用小内存聚合非常大量的日志">
+<meta property='og:description' content="# 0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下： 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘 最终结果输出大约是这样 1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。 # 0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。 我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。 # 0x2 指针 + LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。 # 0x3 建堆 上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。 具体工程实现再继续讨论吧。">
 <meta property='og:url' content='/post/2020/10/25/%E7%94%A8%E5%B0%8F%E5%86%85%E5%AD%98%E8%81%9A%E5%90%88%E9%9D%9E%E5%B8%B8%E5%A4%A7%E9%87%8F%E7%9A%84%E6%97%A5%E5%BF%97/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="用小内存聚合非常大量的日志">
-<meta name="twitter:description" content="0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：
-1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘
-最终结果输出大约是这样
-1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。
-0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。
-我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。
-0x2 指针 &#43; LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。
-0x3 建堆 上面的 指针 &#43; LFU 确实挺工程的，我认为已经非常聪明了。
-我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。
-首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。
-具体工程实现再继续讨论吧。">
+<meta name="twitter:description" content="# 0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下： 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘 最终结果输出大约是这样 1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。 # 0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。 我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。 # 0x2 指针 + LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。 # 0x3 建堆 上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。 具体工程实现再继续讨论吧。">
   
 
 
@@ -100,7 +71,6 @@
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -111,7 +81,6 @@
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -122,7 +91,6 @@
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -133,7 +101,6 @@
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -143,31 +110,12 @@
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -175,7 +123,7 @@
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -183,13 +131,17 @@
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -204,6 +156,9 @@
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -241,13 +196,16 @@
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="0x0-楔子">0x0 楔子</h2>
-<p>在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：</p>
+    <h2 id="0x0-楔子">
+    <a href="#0x0-%e6%a5%94%e5%ad%90" class="header-anchor">#</a>
+    0x0 楔子
+</h2><p>在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下：</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -278,13 +236,19 @@
 </div>
 </div><p>看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。
 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。</p>
-<h2 id="0x1-分治">0x1 分治</h2>
-<p>在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。</p>
+<h2 id="0x1-分治">
+    <a href="#0x1-%e5%88%86%e6%b2%bb" class="header-anchor">#</a>
+    0x1 分治
+</h2><p>在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。</p>
 <p>我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。</p>
-<h2 id="0x2-指针--lfu">0x2 指针 + LFU</h2>
-<p>首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。</p>
-<h2 id="0x3-建堆">0x3 建堆</h2>
-<p>上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。</p>
+<h2 id="0x2-指针--lfu">
+    <a href="#0x2-%e6%8c%87%e9%92%88--lfu" class="header-anchor">#</a>
+    0x2 指针 + LFU
+</h2><p>首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。</p>
+<h2 id="0x3-建堆">
+    <a href="#0x3-%e5%bb%ba%e5%a0%86" class="header-anchor">#</a>
+    0x3 建堆
+</h2><p>上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。</p>
 <p>我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。</p>
 <p>首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。</p>
 <p>具体工程实现再继续讨论吧。</p>
@@ -305,7 +269,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -320,6 +284,37 @@
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -331,9 +326,7 @@
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -417,8 +410,6 @@
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

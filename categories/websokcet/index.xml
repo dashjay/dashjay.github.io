@@ -19,8 +19,10 @@
 &lt;p&gt;但是作为普通的穷苦人民，在上面催你的时候，很难静下新来，慢慢的打开vscode去一行一行的看，比如你现在可能就是在火急火燎的想在知乎上寻求一个解决方案。&lt;/p&gt;
 &lt;p&gt;先说一下我的使用场景。我的场景是这样：&lt;/p&gt;
 &lt;p&gt;用户会登陆软件后，需要一些认证方法，连接上socket，然后会进行高速传输，比如消息、群消息、交易拍卖、其他等等一系列消息，主体就是用户，客体是其他用户或者服务器。&lt;/p&gt;
-&lt;h2 id=&#34;架构&#34;&gt;&lt;strong&gt;架构&lt;/strong&gt;&lt;/h2&gt;
-&lt;p&gt;我现对整个项目架构描述一下&lt;/p&gt;
+&lt;h2 id=&#34;架构&#34;&gt;
+    &lt;a href=&#34;#%e6%9e%b6%e6%9e%84&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    &lt;strong&gt;架构&lt;/strong&gt;
+&lt;/h2&gt;&lt;p&gt;我现对整个项目架构描述一下&lt;/p&gt;
 &lt;p&gt;&lt;img src=&#34;https://pic3.zhimg.com/80/v2-f064e3332e066c5ec3a41331ffe0e302_hd.jpg&#34;
 	
 	
@@ -41,8 +43,10 @@
 &lt;/blockquote&gt;
 &lt;p&gt;④. 注销，一旦客户端退出或者网络中断等异常，就会出现断开。&lt;/p&gt;
 &lt;p&gt;好了讲了整个东西架构，让我们来看看怎么实现的把，showcode时间到了。&lt;/p&gt;
-&lt;h2 id=&#34;实现&#34;&gt;&lt;strong&gt;实现&lt;/strong&gt;&lt;/h2&gt;
-&lt;p&gt;首先，让我们来看看hub的结构吧，说结构还真的就是结构&lt;/p&gt;
+&lt;h2 id=&#34;实现&#34;&gt;
+    &lt;a href=&#34;#%e5%ae%9e%e7%8e%b0&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    &lt;strong&gt;实现&lt;/strong&gt;
+&lt;/h2&gt;&lt;p&gt;首先，让我们来看看hub的结构吧，说结构还真的就是结构&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
 &lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1

@@ -1,62 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。
-常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。
-CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。
-即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。
-CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。
-根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换
-进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&amp;gt; write() -&amp;gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景：
-时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。
-线程上下文切换 线程和进程的区别？
-当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文……
-因为线程是调度的单位，然而调度的过程中会发现两种不同的情况：
-第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。
-线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。
-中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。
-如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒
-1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息'><title>CPU上下文切换</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。 常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。 CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。 即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。 # CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。 根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换 # 进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&gt; write() -&gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景： 时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。 # 线程上下文切换 线程和进程的区别？ 当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文…… 因为线程是调度的单位，然而调度的过程中会发现两种不同的情况： 第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。 线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。 # 中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。 # 如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒 1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息">
+<title>CPU上下文切换</title>
 
 <link rel='canonical' href='/post/2020/11/12/cpu%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='CPU上下文切换'>
-<meta property='og:description' content='CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。
-常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。
-CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。
-即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。
-CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。
-根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换
-进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&amp;gt; write() -&amp;gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景：
-时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。
-线程上下文切换 线程和进程的区别？
-当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文……
-因为线程是调度的单位，然而调度的过程中会发现两种不同的情况：
-第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。
-线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。
-中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。
-如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒
-1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="CPU上下文切换">
+<meta property='og:description' content="# CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。 常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。 CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。 即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。 # CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。 根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换 # 进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&gt; write() -&gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景： 时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。 # 线程上下文切换 线程和进程的区别？ 当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文…… 因为线程是调度的单位，然而调度的过程中会发现两种不同的情况： 第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。 线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。 # 中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。 # 如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒 1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息">
 <meta property='og:url' content='/post/2020/11/12/cpu%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="CPU上下文切换">
-<meta name="twitter:description" content="CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。
-常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。
-CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。
-即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。
-CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。
-根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换
-进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&amp;gt; write() -&amp;gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景：
-时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。
-线程上下文切换 线程和进程的区别？
-当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文……
-因为线程是调度的单位，然而调度的过程中会发现两种不同的情况：
-第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。
-线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。
-中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。
-如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒
-1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息">
+<meta name="twitter:description" content="# CPU 上下文 当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。 常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。 CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。 即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 CPU 上下文 。 # CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。 根据任务不同，分成不同的上下文切换：进程上下文切换，线程上下文切换以及中断上下文切换 # 进程上下文切换 正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，open() -&gt; write() -&gt; close() 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景： 时间片耗尽 进程系统资源不足 进程通过sleep函数休眠 高优先级进程运行 进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。 # 线程上下文切换 线程和进程的区别？ 当进程只包含一个线程时，可以认为进程等于线程 当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。 线程有私有数据，栈，寄存器等。 其实没有进程上下文切换，只有线程上下文…… 因为线程是调度的单位，然而调度的过程中会发现两种不同的情况： 第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。 线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。 # 中断上下文切换 对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。 # 如何查看系统中断 vmstat 1 1 每隔1秒输出1次，总计输出1秒 1 2 3 procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu----- r b swpd free buff cache si so bi bo in cs us sy id wa st 2 0 0 269564 64872 890480 0 0 168 52 975 7756 6 9 86 0 0 r：是就绪队列，超过cpu核心数就会产生竞争 us和sy： user 和 system 列：表示 CPU 分别被 user 和 system 占用多少？ in：指标是975，说明每秒中断975次 cs：上下文切换 7756次 使用 pidstat 能看到进程详细信息">
   
 
 
@@ -115,7 +71,6 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -126,7 +81,6 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -137,7 +91,6 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -148,7 +101,6 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -158,31 +110,12 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -190,7 +123,7 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -198,13 +131,17 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -219,6 +156,9 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -256,21 +196,28 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="cpu-上下文">CPU 上下文</h2>
-<p>当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。</p>
+    <h2 id="cpu-上下文">
+    <a href="#cpu-%e4%b8%8a%e4%b8%8b%e6%96%87" class="header-anchor">#</a>
+    CPU 上下文
+</h2><p>当多个进程竞争同一个 CPU 的时候，会导致大量的上下文切换，从而使得系统负载升高。</p>
 <p>常见的系统都是多任务操作系统，进程数量远大于 CPU 数量，系统会在很短的时间内将 CPU 资源轮流分给不同的进程使用，从而营造多任务的错觉。</p>
 <p>CPU 知道其实并不用关心任务从从哪里开始，它只需要把 PC（程序计数器）中的指令取出来执行即可。</p>
 <p>即将执行的下一条指令位置，寄存器等等这些速度极快的在 CPU 中的小内存被叫做 <strong>CPU 上下文</strong> 。</p>
-<h2 id="cpu-上下文切换">CPU 上下文切换</h2>
-<p>就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。</p>
+<h2 id="cpu-上下文切换">
+    <a href="#cpu-%e4%b8%8a%e4%b8%8b%e6%96%87%e5%88%87%e6%8d%a2" class="header-anchor">#</a>
+    CPU 上下文切换
+</h2><p>就是把前一个任务的的上下文保存起来，然后使用新的上下文覆盖当前上下文，等执行完当前任务或者时间片到了再切换回原来的上下文。</p>
 <p>根据任务不同，分成不同的上下文切换：<strong>进程上下文切换，线程上下文切换以及中断上下文切换</strong></p>
-<h3 id="进程上下文切换">进程上下文切换</h3>
-<p>正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，<code>open() -&gt; write() -&gt; close()</code> 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景：</p>
+<h3 id="进程上下文切换">
+    <a href="#%e8%bf%9b%e7%a8%8b%e4%b8%8a%e4%b8%8b%e6%96%87%e5%88%87%e6%8d%a2" class="header-anchor">#</a>
+    进程上下文切换
+</h3><p>正常执行的进程处于 Ring3 （用户空间），而内核空间是 Ring0，当进程尝试读写文件的时候，会先使用系统调用打开文件描述符，<code>open() -&gt; write() -&gt; close()</code> 等一系列操作，系统调用也是会是的 CPU 进行上下文切换的，通常涉及上下文切换的在以下场景：</p>
 <ul>
 <li>时间片耗尽</li>
 <li>进程系统资源不足</li>
@@ -278,8 +225,10 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 <li>高优先级进程运行</li>
 </ul>
 <p>进程是由内核来管理调度的，进程的切换只能发生在内核态，所以进程的上下文切换不仅包括了虚拟内存、栈、全局变量等，还包括了内核堆栈，寄存器的让那个内核空间的状态。</p>
-<h3 id="线程上下文切换">线程上下文切换</h3>
-<p>线程和进程的区别？</p>
+<h3 id="线程上下文切换">
+    <a href="#%e7%ba%bf%e7%a8%8b%e4%b8%8a%e4%b8%8b%e6%96%87%e5%88%87%e6%8d%a2" class="header-anchor">#</a>
+    线程上下文切换
+</h3><p>线程和进程的区别？</p>
 <ul>
 <li>当进程只包含一个线程时，可以认为进程等于线程</li>
 <li>当进程拥有多个线程时，这些线程会共享相同的虚拟内存和全局全局变量。</li>
@@ -290,10 +239,14 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 <p>第一种，前后两个线程不属于同一个进程。此时，因为资源不共享，所以切换过程和进程一样。
 第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不同，只需要切换线程的私有数据，寄存器等不共享的数据。</p>
 <p>线程共享相同的虚拟内幕和全局变量等资源，这些资源在上下文切换时不需要修改。</p>
-<h3 id="中断上下文切换">中断上下文切换</h3>
-<p>对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。</p>
-<h3 id="如何查看系统中断">如何查看系统中断</h3>
-<p><code>vmstat 1 1</code> 每隔1秒输出1次，总计输出1秒</p>
+<h3 id="中断上下文切换">
+    <a href="#%e4%b8%ad%e6%96%ad%e4%b8%8a%e4%b8%8b%e6%96%87%e5%88%87%e6%8d%a2" class="header-anchor">#</a>
+    中断上下文切换
+</h3><p>对于同一个 CPU 来说，中断处理比进程拥有更高的优先级。</p>
+<h3 id="如何查看系统中断">
+    <a href="#%e5%a6%82%e4%bd%95%e6%9f%a5%e7%9c%8b%e7%b3%bb%e7%bb%9f%e4%b8%ad%e6%96%ad" class="header-anchor">#</a>
+    如何查看系统中断
+</h3><p><code>vmstat 1 1</code> 每隔1秒输出1次，总计输出1秒</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -345,8 +298,10 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 <li>cswch 自愿上下文切换：进程无法获得需要资源而产生上下文切换。</li>
 <li>nvcswch 非自愿上下文切换：进程时间片到了，被系统强制调度，而发生的上下文切换</li>
 </ul>
-<h3 id="更深层次查看进程运行情况">更深层次查看进程运行情况</h3>
-<p>某个进程运行消耗大量资源，却不知道它在干什么，因此，希望使用 perf 工具来查看。</p>
+<h3 id="更深层次查看进程运行情况">
+    <a href="#%e6%9b%b4%e6%b7%b1%e5%b1%82%e6%ac%a1%e6%9f%a5%e7%9c%8b%e8%bf%9b%e7%a8%8b%e8%bf%90%e8%a1%8c%e6%83%85%e5%86%b5" class="header-anchor">#</a>
+    更深层次查看进程运行情况
+</h3><p>某个进程运行消耗大量资源，却不知道它在干什么，因此，希望使用 perf 工具来查看。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -393,7 +348,7 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -408,6 +363,37 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -419,9 +405,7 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -505,8 +489,6 @@ CPU 上下文切换 就是把前一个任务的的上下文保存起来，然后
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

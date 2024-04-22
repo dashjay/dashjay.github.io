@@ -1,41 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='二话不说先甩上Github连接 Verilog-Judge-USTB
-Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写
-A verilog online judger from USTB, based on Flask-python
-Usage 构建(build)
-1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run)
-1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部
-测试(test)
-1 2 chmod &#43;x test.sh python test.py | python -m json.tool 以下是测试输出
-1 2 3 4 5 6 { &amp;#34;cmpcode&amp;#34;: 1, &amp;#34;cmpresult&amp;#34;: &amp;#34;Start time: 07:46:33 on Sep 02,2019\nvlog top_module.'><title>使用modelsim_ase &#43; flask实现了一个测评沙箱</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="二话不说先甩上Github连接 Verilog-Judge-USTB # Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写 A verilog online judger from USTB, based on Flask-python # Usage 构建(build) 1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run) 1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部 测试(test) 1 2 chmod +x test.sh python test.py | python -m json.tool 以下是测试输出 1 2 3 4 5 6 { &#34;cmpcode&#34;: 1, &#34;cmpresult&#34;: &#34;Start time: 07:46:33 on Sep 02,2019\\nvlog top_module.">
+<title>使用modelsim_ase &#43; flask实现了一个测评沙箱</title>
 
 <link rel='canonical' href='/post/2019/09/02/modelsim-ase-flask/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='使用modelsim_ase &#43; flask实现了一个测评沙箱'>
-<meta property='og:description' content='二话不说先甩上Github连接 Verilog-Judge-USTB
-Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写
-A verilog online judger from USTB, based on Flask-python
-Usage 构建(build)
-1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run)
-1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部
-测试(test)
-1 2 chmod &#43;x test.sh python test.py | python -m json.tool 以下是测试输出
-1 2 3 4 5 6 { &amp;#34;cmpcode&amp;#34;: 1, &amp;#34;cmpresult&amp;#34;: &amp;#34;Start time: 07:46:33 on Sep 02,2019\nvlog top_module.'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="使用modelsim_ase + flask实现了一个测评沙箱">
+<meta property='og:description' content="二话不说先甩上Github连接 Verilog-Judge-USTB # Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写 A verilog online judger from USTB, based on Flask-python # Usage 构建(build) 1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run) 1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部 测试(test) 1 2 chmod +x test.sh python test.py | python -m json.tool 以下是测试输出 1 2 3 4 5 6 { &#34;cmpcode&#34;: 1, &#34;cmpresult&#34;: &#34;Start time: 07:46:33 on Sep 02,2019\\nvlog top_module.">
 <meta property='og:url' content='/post/2019/09/02/modelsim-ase-flask/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='verilog' /><meta property='article:tag' content='OJ' /><meta property='article:published_time' content='2019-09-02T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
-<meta name="twitter:title" content="使用modelsim_ase &#43; flask实现了一个测评沙箱">
-<meta name="twitter:description" content="二话不说先甩上Github连接 Verilog-Judge-USTB
-Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写
-A verilog online judger from USTB, based on Flask-python
-Usage 构建(build)
-1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run)
-1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部
-测试(test)
-1 2 chmod &#43;x test.sh python test.py | python -m json.tool 以下是测试输出
-1 2 3 4 5 6 { &amp;#34;cmpcode&amp;#34;: 1, &amp;#34;cmpresult&amp;#34;: &amp;#34;Start time: 07:46:33 on Sep 02,2019\nvlog top_module.">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='verilog' /><meta property='article:tag' content='OJ' /><meta property='article:published_time' content='2019-09-02T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
+<meta name="twitter:title" content="使用modelsim_ase + flask实现了一个测评沙箱">
+<meta name="twitter:description" content="二话不说先甩上Github连接 Verilog-Judge-USTB # Verilog-Judge-USTB 来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写 A verilog online judger from USTB, based on Flask-python # Usage 构建(build) 1 2 3 git clone https://github.com/dashjay/Verilog-Judge-USTB.git cd Verilog-Judge-USTB docker build . -t verilog-judge 运行(run) 1 docker run verilog-judge -v ./modelsim_ase:/root/modelsim_ase -p 33778:5000 内部指定的modelsim_ase来自FPGA微软的免费软件 Quartus Lite 中的modelsim组件 docker内部运行的端口是5000，开在外部 测试(test) 1 2 chmod +x test.sh python test.py | python -m json.tool 以下是测试输出 1 2 3 4 5 6 { &#34;cmpcode&#34;: 1, &#34;cmpresult&#34;: &#34;Start time: 07:46:33 on Sep 02,2019\\nvlog top_module.">
   
 
 
@@ -94,7 +71,6 @@ Usage 构建(build)
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -105,7 +81,6 @@ Usage 构建(build)
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -116,7 +91,6 @@ Usage 构建(build)
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -127,7 +101,6 @@ Usage 构建(build)
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -137,31 +110,12 @@ Usage 构建(build)
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -169,7 +123,7 @@ Usage 构建(build)
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -177,13 +131,17 @@ Usage 构建(build)
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -198,6 +156,9 @@ Usage 构建(build)
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -235,6 +196,7 @@ Usage 构建(build)
 
     
 </div>
+
 </header>
 
     <section class="article-content">
@@ -243,11 +205,15 @@ Usage 构建(build)
     <p>二话不说先甩上Github连接
 <a class="link" href="https://github.com/dashjay/Verilog-Judge-USTB"  target="_blank" rel="noopener"
     >Verilog-Judge-USTB</a></p>
-<h2 id="verilog-judge-ustb">Verilog-Judge-USTB</h2>
-<p>来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写</p>
+<h2 id="verilog-judge-ustb">
+    <a href="#verilog-judge-ustb" class="header-anchor">#</a>
+    Verilog-Judge-USTB
+</h2><p>来自北京科技大学某小组的一个verilog的评测沙箱，基于Flask编写</p>
 <p>A verilog online judger from USTB, based on Flask-python</p>
-<h2 id="usage">Usage</h2>
-<p><strong>构建</strong>(build)</p>
+<h2 id="usage">
+    <a href="#usage" class="header-anchor">#</a>
+    Usage
+</h2><p><strong>构建</strong>(build)</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -325,8 +291,10 @@ docker内部运行的端口是5000，开在外部</p>
 </tr>
 </tbody>
 </table></div>
-<h3 id="thanks">thanks</h3>
-<p><a class="link" href="https://github.com/orgs/806Cypher/people/Explainaur"  target="_blank" rel="noopener"
+<h3 id="thanks">
+    <a href="#thanks" class="header-anchor">#</a>
+    thanks
+</h3><p><a class="link" href="https://github.com/orgs/806Cypher/people/Explainaur"  target="_blank" rel="noopener"
     >Explainaur</a> 编写了复杂的shell脚本</p>
 <p><a class="link" href="https://github.com/dashjay"  target="_blank" rel="noopener"
     >dashjay</a>写了Web服务进行测试了一下</p>
@@ -358,7 +326,7 @@ docker内部运行的端口是5000，开在外部</p>
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -395,6 +363,37 @@ docker内部运行的端口是5000，开在外部</p>
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -406,9 +405,7 @@ docker内部运行的端口是5000，开在外部</p>
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -492,8 +489,6 @@ docker内部运行的端口是5000，开在外部</p>
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

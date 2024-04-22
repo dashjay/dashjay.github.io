@@ -1,23 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
-为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .'><title>定位 502 问题，最后竟然发现和交换机有关</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# 0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志： 为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。 1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection .">
+<title>定位 502 问题，最后竟然发现和交换机有关</title>
 
 <link rel='canonical' href='/post/2023/05/06/troubleshoot-502-problem/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='定位 502 问题，最后竟然发现和交换机有关'>
-<meta property='og:description' content='0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
-为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="定位 502 问题，最后竟然发现和交换机有关">
+<meta property='og:description' content="# 0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志： 为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。 1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection .">
 <meta property='og:url' content='/post/2023/05/06/troubleshoot-502-problem/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="定位 502 问题，最后竟然发现和交换机有关">
-<meta name="twitter:description" content="0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：
-为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&amp;gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&amp;gt;ip-backend:80: write tcp ip-proxy:52736-&amp;gt;ip-backend:80: use of closed network connection .">
+<meta name="twitter:description" content="# 0x00 起因 昨天有人报告说使用我们的服务间歇性抽风出现了一些 502 报错，查了一下 kibana 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志： 为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是proxy服务，下面替换为ip-proxy；和三个backend，但是他们位于一个交换机下，并且交换机给他们配置了一个VIP，我们称为，ip-backend。 1 2 3 4 5 6 7 8 9 10 11 12 13 14 May 05 17:33:07 *: 2023/05/05 17:33:07 http: proxy error: read tcp ip-proxy:51392-&gt;ip-backend:80: read: connection reset by peer May 05 17:38:09 *: 2023/05/05 17:38:09 http: proxy error: read tcp ip-proxy:52468-&gt;ip-backend:80: read: connection reset by peer May 05 17:39:14 *: 2023/05/05 17:39:14 http: proxy error: readfrom tcp ip-proxy:52736-&gt;ip-backend:80: write tcp ip-proxy:52736-&gt;ip-backend:80: use of closed network connection .">
   
 
 
@@ -76,7 +71,6 @@
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -87,7 +81,6 @@
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -98,7 +91,6 @@
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -109,7 +101,6 @@
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -119,31 +110,12 @@
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -151,7 +123,7 @@
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -159,13 +131,17 @@
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -180,6 +156,9 @@
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -217,13 +196,16 @@
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="0x00-起因">0x00 起因</h2>
-<p>昨天有人报告说使用我们的服务间歇性抽风出现了一些 <code>502</code> 报错，查了一下 <code>kibana</code> 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：</p>
+    <h2 id="0x00-起因">
+    <a href="#0x00-%e8%b5%b7%e5%9b%a0" class="header-anchor">#</a>
+    0x00 起因
+</h2><p>昨天有人报告说使用我们的服务间歇性抽风出现了一些 <code>502</code> 报错，查了一下 <code>kibana</code> 发现日志里确实出现了一些，上服务器检查了一下发现有如下日志：</p>
 <blockquote>
 <p>为了脱敏，我把一些 IP 细节隐藏掉了，本文涉及的服务一共有四个节点，分别是<code>proxy</code>服务，下面替换为<code>ip-proxy</code>；和三个<code>backend</code>，但是他们位于一个交换机下，并且交换机给他们配置了一个<code>VIP</code>，我们称为，<code>ip-backend</code>。</p>
 </blockquote>
@@ -263,8 +245,10 @@
 </div>
 </div><p>说实话，看到这个报错，我第一时间去看了我们代码，全文搜索过后，我并没有在任何地方返回 502。</p>
 <p>第一时间根据日志推测出来大致可能性： <code>proxy</code> 到3个 <code>backend</code> 的连接异常断开了，然后 <code>proxy</code> 中使用了 httputil.ReverseProxy 相关代码，内部有类似 Nginx 反向代理的逻辑，导致了这个问题，我开始在代码里翻找。</p>
-<h2 id="0x01-查代码冤假错案">0x01 查代码——冤假错案</h2>
-<p>我仔细观察代码，找到可能产生错误 close 连接的代码，并没有找到，然后突然我看到了这样的代码：</p>
+<h2 id="0x01-查代码冤假错案">
+    <a href="#0x01-%e6%9f%a5%e4%bb%a3%e7%a0%81%e5%86%a4%e5%81%87%e9%94%99%e6%a1%88" class="header-anchor">#</a>
+    0x01 查代码——冤假错案
+</h2><p>我仔细观察代码，找到可能产生错误 close 连接的代码，并没有找到，然后突然我看到了这样的代码：</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -336,8 +320,10 @@
 </div>
 </div><p>我开始假想出现这样的问题：假设连接空闲了 <code>90</code> 秒，要被系统关闭，但是没有等到一次 <code>Keep-Alive</code> 检测，服务刚好要使用这个连接，连接就刚好关闭了，应该是偶发现象，心安理得，开始摸鱼。</p>
 <p>随后第二天来我发现事情越来越不可控了，<code>502</code> 的问题越来越多，我不得不继续排查，不得不选择最最最不想做的抓包……再额外交代一下背景就是这个破玩意儿流量非常大，几分钟就能抓几十个G的包。</p>
-<h3 id="0x02-抓包当面对峙">0x02 抓包——当面对峙</h3>
-<p>抓包是一个极其无聊的过程……，而且因为业务流量大、偶发（一个小时一次或几次）的问题，我不得不像守株待兔一样，盯着这破东西，我也想过用 <code>gopackage</code> 或者 <code>eBPF</code> 来写一些基础的 filter，最终还是决定就硬抓算了。</p>
+<h3 id="0x02-抓包当面对峙">
+    <a href="#0x02-%e6%8a%93%e5%8c%85%e5%bd%93%e9%9d%a2%e5%af%b9%e5%b3%99" class="header-anchor">#</a>
+    0x02 抓包——当面对峙
+</h3><p>抓包是一个极其无聊的过程……，而且因为业务流量大、偶发（一个小时一次或几次）的问题，我不得不像守株待兔一样，盯着这破东西，我也想过用 <code>gopackage</code> 或者 <code>eBPF</code> 来写一些基础的 filter，最终还是决定就硬抓算了。</p>
 <p>每隔几分钟就开新的，并且关闭旧的抓包，这样 rotate 抓包，抓了不知道多久，日志里突然跳出来一个报错，<code>use of closed network</code>，我立马关闭抓包，可是还是抓了总计100多G的包……</p>
 <p>在三个 backend 节点上分别抓到30多G的包，管他的直接开撸，了解到报错的端口号之后：</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -521,7 +507,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -536,6 +522,37 @@
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -547,9 +564,7 @@
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -633,8 +648,6 @@
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

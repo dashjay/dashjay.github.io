@@ -1,47 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。'><title>汉明码对数据的纠错&amp;ECC内存</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# 0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。 最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。 今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。 今天我们来回顾一下学生知识： # 0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位 假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。 为了方便，我把数据放进表格里，然后打上标志 A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。 0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111, 然后把所有1位置对应的二进制描述全部按顺序列出来 1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。">
+<title>汉明码对数据的纠错&amp;ECC内存</title>
 
 <link rel='canonical' href='/post/2022/07/10/hanming-code-ecc/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='汉明码对数据的纠错&amp;ECC内存'>
-<meta property='og:description' content='0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="汉明码对数据的纠错&ECC内存">
+<meta property='og:description' content="# 0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。 最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。 今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。 今天我们来回顾一下学生知识： # 0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位 假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。 为了方便，我把数据放进表格里，然后打上标志 A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。 0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111, 然后把所有1位置对应的二进制描述全部按顺序列出来 1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。">
 <meta property='og:url' content='/post/2022/07/10/hanming-code-ecc/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-07-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
-<meta name="twitter:title" content="汉明码对数据的纠错&amp;ECC内存">
-<meta name="twitter:description" content="0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。
-最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。
-今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。
-今天我们来回顾一下学生知识：
-0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位
-假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。
-为了方便，我把数据放进表格里，然后打上标志
-A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。
-0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111,
-然后把所有1位置对应的二进制描述全部按顺序列出来
-1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。">
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-07-10T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
+<meta name="twitter:title" content="汉明码对数据的纠错&ECC内存">
+<meta name="twitter:description" content="# 0x00 在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。 最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。 今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。 今天我们来回顾一下学生知识： # 0x01 假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位 假设数据就是 0010 0011 010 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。 为了方便，我把数据放进表格里，然后打上标志 A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产生规则，我先直接填充上。 0 1 1 0 1 0 1 0 1 0 0 1 1 0 1 0 并且把所有表格按照二进制顺序排序，0000,0001，0010,0011……1111, 然后把所有1位置对应的二进制描述全部按顺序列出来 1 2 3 4 5 6 7 8 0001 0010 0100 0110 1000 1011 1100 1110 上面这些数位按位异或，就会得到0000,校验就会成功。">
   
 
 
@@ -100,7 +71,6 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -111,7 +81,6 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -122,7 +91,6 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -133,7 +101,6 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -143,31 +110,12 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -175,7 +123,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -183,13 +131,17 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -204,6 +156,9 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -241,18 +196,23 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="0x00">0x00</h2>
-<p>在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。</p>
+    <h2 id="0x00">
+    <a href="#0x00" class="header-anchor">#</a>
+    0x00
+</h2><p>在过去一年的工作里，大多数时间都在做的内容是私有化交付，大概就是 Bazel 打包某些应用到 Linux 下部署，开发的任务相对其他同学来说比较少，也很久没有接触到算法了。</p>
 <p>最近被分配到另一个组里（data组）也就是数据持久化的一个组，然后我在悄悄学习一些数据相关的技术。</p>
 <p>今天本来是想上网去找EC算法（ErasureCode）的资料，结果突然看到了 ECC 内存使用的汉明码，然后突然想起来，以前学校里学过这个东西，但是只停留在怎么用这个层级，不知道原理是什么。</p>
 <p>今天我们来回顾一下学生知识：</p>
-<h2 id="0x01">0x01</h2>
-<p>假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位</p>
+<h2 id="0x01">
+    <a href="#0x01" class="header-anchor">#</a>
+    0x01
+</h2><p>假设我们有一组数据要传输或者储存，为了计算方便我们将数据的长度设置为11位，也就是说11个数据位</p>
 <p>假设数据就是 <code>0010 0011 010</code> 然后我们会在这些数据里去插入一些校验位，分别在 $2^0, 2^1, 2^2, 2^3$ 加入四个校验位。</p>
 <p>为了方便，我把数据放进表格里，然后打上标志</p>
 <div class="table-wrapper"><table>
@@ -341,8 +301,10 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>上面这些数位按位异或，就会得到0000,校验就会成功。</p>
-<h2 id="0x02">0x02</h2>
-<p>书上说这么校验，但是我一直不知道为什么，知道看了茶谈硬件的视频以后才知道。</p>
+<h2 id="0x02">
+    <a href="#0x02" class="header-anchor">#</a>
+    0x02
+</h2><p>书上说这么校验，但是我一直不知道为什么，知道看了茶谈硬件的视频以后才知道。</p>
 <div class="table-wrapper"><table>
 <thead>
 <tr>
@@ -402,7 +364,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -417,6 +379,37 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -428,9 +421,7 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -514,8 +505,6 @@ A0 A1 A2 0 A3 0 1 0 A8 0 0 1 1 0 1 0 我先说不说 A 相关的比特位的产�
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

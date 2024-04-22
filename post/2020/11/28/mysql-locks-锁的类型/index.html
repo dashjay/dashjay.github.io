@@ -1,20 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。
-2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; 3. 记录锁 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; 5. 临键锁（Next-key Locks） 6. 插入意向锁(Insert Intention Locks) 7. 自增锁(Auto-inc Locks) 总结 按锁的互斥程度来划分，可以分为共享、排他锁；'><title>MySQL - LOCKS 锁的类型</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks # 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。 # 2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; # 3. 记录锁 # 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; # 5. 临键锁（Next-key Locks） # 6. 插入意向锁(Insert Intention Locks) # 7.">
+<title>MySQL - LOCKS 锁的类型</title>
 
 <link rel='canonical' href='/post/2020/11/28/mysql-locks-%E9%94%81%E7%9A%84%E7%B1%BB%E5%9E%8B/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='MySQL - LOCKS 锁的类型'>
-<meta property='og:description' content='MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。
-2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; 3. 记录锁 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; 5. 临键锁（Next-key Locks） 6. 插入意向锁(Insert Intention Locks) 7. 自增锁(Auto-inc Locks) 总结 按锁的互斥程度来划分，可以分为共享、排他锁；'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="MySQL - LOCKS 锁的类型">
+<meta property='og:description' content="# MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks # 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。 # 2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; # 3. 记录锁 # 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; # 5. 临键锁（Next-key Locks） # 6. 插入意向锁(Insert Intention Locks) # 7.">
 <meta property='og:url' content='/post/2020/11/28/mysql-locks-%E9%94%81%E7%9A%84%E7%B1%BB%E5%9E%8B/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-28T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-28T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="MySQL - LOCKS 锁的类型">
-<meta name="twitter:description" content="MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。
-2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; 3. 记录锁 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; 5. 临键锁（Next-key Locks） 6. 插入意向锁(Insert Intention Locks) 7. 自增锁(Auto-inc Locks) 总结 按锁的互斥程度来划分，可以分为共享、排他锁；">
+<meta name="twitter:description" content="# MySQL 有哪些锁 共享/排它锁(Shared and Exclusive Locks) 意向锁(Intention Locks) 记录锁(Record Locks) 间隙锁(Gap Locks) 临键锁(Next-key Locks) 插入意向锁(Insert Intention Locks) 自增锁(Auto-inc Locks # 1. 共享/排它锁(Sharedand Exclusive Locks) 读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。 # 2. 意向锁(Intention Locks) 意向锁是一个表级别的锁 分为两种类型 意向共享锁 select ... lock in share mode; 意向排他锁 select ... for update; # 3. 记录锁 # 4. 间隙锁 1 select * from lock_example where id between 8 and 15 for update; # 5. 临键锁（Next-key Locks） # 6. 插入意向锁(Insert Intention Locks) # 7.">
   
 
 
@@ -73,7 +71,6 @@
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -84,7 +81,6 @@
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -95,7 +91,6 @@
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -106,7 +101,6 @@
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -116,31 +110,12 @@
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -148,7 +123,7 @@
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -156,13 +131,17 @@
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -177,6 +156,9 @@
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -214,13 +196,16 @@
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="mysql-有哪些锁">MySQL 有哪些锁</h2>
-<ul>
+    <h2 id="mysql-有哪些锁">
+    <a href="#mysql-%e6%9c%89%e5%93%aa%e4%ba%9b%e9%94%81" class="header-anchor">#</a>
+    MySQL 有哪些锁
+</h2><ul>
 <li>共享/排它锁(Shared and Exclusive Locks)</li>
 <li>意向锁(Intention Locks)</li>
 <li>记录锁(Record Locks)</li>
@@ -229,10 +214,14 @@
 <li>插入意向锁(Insert Intention Locks)</li>
 <li>自增锁(Auto-inc Locks</li>
 </ul>
-<h3 id="1-共享排它锁sharedand-exclusive-locks">1. 共享/排它锁(Sharedand Exclusive Locks)</h3>
-<p>读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。</p>
-<h3 id="2-意向锁intention-locks">2. 意向锁(Intention Locks)</h3>
-<ul>
+<h3 id="1-共享排它锁sharedand-exclusive-locks">
+    <a href="#1-%e5%85%b1%e4%ba%ab%e6%8e%92%e5%ae%83%e9%94%81sharedand-exclusive-locks" class="header-anchor">#</a>
+    1. 共享/排它锁(Sharedand Exclusive Locks)
+</h3><p>读取数据加共享锁，读读之间可以并行。排他锁与任何锁都互斥。</p>
+<h3 id="2-意向锁intention-locks">
+    <a href="#2-%e6%84%8f%e5%90%91%e9%94%81intention-locks" class="header-anchor">#</a>
+    2. 意向锁(Intention Locks)
+</h3><ul>
 <li>意向锁是一个表级别的锁</li>
 <li>分为两种类型
 <ul>
@@ -241,9 +230,13 @@
 </ul>
 </li>
 </ul>
-<h3 id="3-记录锁">3. 记录锁</h3>
-<h3 id="4-间隙锁">4. 间隙锁</h3>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h3 id="3-记录锁">
+    <a href="#3-%e8%ae%b0%e5%bd%95%e9%94%81" class="header-anchor">#</a>
+    3. 记录锁
+</h3><h3 id="4-间隙锁">
+    <a href="#4-%e9%97%b4%e9%9a%99%e9%94%81" class="header-anchor">#</a>
+    4. 间隙锁
+</h3><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span></code></pre></td>
@@ -251,11 +244,19 @@
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#fff;font-weight:bold">select</span> * <span style="color:#fff;font-weight:bold">from</span> lock_example <span style="color:#fff;font-weight:bold">where</span> id <span style="color:#fff;font-weight:bold">between</span> <span style="color:#ff0;font-weight:bold">8</span> <span style="color:#fff;font-weight:bold">and</span> <span style="color:#ff0;font-weight:bold">15</span> <span style="color:#fff;font-weight:bold">for</span> <span style="color:#fff;font-weight:bold">update</span>;
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="5-临键锁next-key-locks">5. 临键锁（Next-key Locks）</h3>
-<h3 id="6-插入意向锁insert-intention-locks">6. 插入意向锁(Insert Intention Locks)</h3>
-<h3 id="7-自增锁auto-inc-locks">7. 自增锁(Auto-inc Locks)</h3>
-<h3 id="总结">总结</h3>
-<p>按锁的互斥程度来划分，可以分为共享、排他锁；</p>
+</div><h3 id="5-临键锁next-key-locks">
+    <a href="#5-%e4%b8%b4%e9%94%ae%e9%94%81next-key-locks" class="header-anchor">#</a>
+    5. 临键锁（Next-key Locks）
+</h3><h3 id="6-插入意向锁insert-intention-locks">
+    <a href="#6-%e6%8f%92%e5%85%a5%e6%84%8f%e5%90%91%e9%94%81insert-intention-locks" class="header-anchor">#</a>
+    6. 插入意向锁(Insert Intention Locks)
+</h3><h3 id="7-自增锁auto-inc-locks">
+    <a href="#7-%e8%87%aa%e5%a2%9e%e9%94%81auto-inc-locks" class="header-anchor">#</a>
+    7. 自增锁(Auto-inc Locks)
+</h3><h3 id="总结">
+    <a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#</a>
+    总结
+</h3><p>按锁的互斥程度来划分，可以分为共享、排他锁；</p>
 <ul>
 <li>共享锁(S锁、IS锁)，可以提高读读并发；</li>
 <li>为了保证数据强一致，InnoDB使用强互斥锁(X锁、IX锁)，保证同一行记录修改与删除的串行性；</li>
@@ -289,7 +290,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -304,6 +305,37 @@
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -315,9 +347,7 @@
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -401,8 +431,6 @@
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

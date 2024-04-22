@@ -1,23 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='golang 中 map 性能优化[低阶] 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map
-1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.'><title>golang下map的性能分析</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# golang 中 map 性能优化[低阶] # 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map 1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.">
+<title>golang下map的性能分析</title>
 
 <link rel='canonical' href='/post/2020/01/12/golang-map/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='golang下map的性能分析'>
-<meta property='og:description' content='golang 中 map 性能优化[低阶] 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map
-1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="golang下map的性能分析">
+<meta property='og:description' content="# golang 中 map 性能优化[低阶] # 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map 1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.">
 <meta property='og:url' content='/post/2020/01/12/golang-map/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-01-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-01-12T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="golang下map的性能分析">
-<meta name="twitter:description" content="golang 中 map 性能优化[低阶] 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map
-1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.">
+<meta name="twitter:description" content="# golang 中 map 性能优化[低阶] # 简单介绍 golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。 为了测试多个 map 的性能我写了个接口 Map 1 2 3 4 5 type Map interface { Set(key string, val interface{}) Get(key string) (interface{}, bool) Del(key string) } 然后这是封装的普通的 map 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 type OriginMap struct { m map[string]interface{} } func NewOriginMap() *OriginMap { return &amp;OriginMap{m: make(map[string]interface{})} } func (o *OriginMap) Get(key string) (interface{}, bool) { v, ok := o.">
   
 
 
@@ -76,7 +71,6 @@
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -87,7 +81,6 @@
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -98,7 +91,6 @@
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -109,7 +101,6 @@
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -119,31 +110,12 @@
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -151,7 +123,7 @@
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -159,13 +131,17 @@
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -180,6 +156,9 @@
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -217,14 +196,19 @@
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="golang-中-map-性能优化低阶">golang 中 map 性能优化[低阶]</h2>
-<h3 id="简单介绍">简单介绍</h3>
-<p>golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。
+    <h2 id="golang-中-map-性能优化低阶">
+    <a href="#golang-%e4%b8%ad-map-%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e4%bd%8e%e9%98%b6" class="header-anchor">#</a>
+    golang 中 map 性能优化[低阶]
+</h2><h3 id="简单介绍">
+    <a href="#%e7%ae%80%e5%8d%95%e4%bb%8b%e7%bb%8d" class="header-anchor">#</a>
+    简单介绍
+</h3><p>golang 中的 build-in 的 map 这个 map 是非线程安全的，但是也是最常用的一个家伙。
 为了测试多个 map 的性能我写了个接口 Map</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -374,8 +358,10 @@
     >stackoverflow 上的讨论</a>和<a class="link" href="https://github.com/golang/go/issues/21035"  title="github 上的讨论"
      target="_blank" rel="noopener"
     >github 这里</a>去查看相关的 issue</p>
-<h3 id="sync-map">Sync. Map</h3>
-<p>这是某大佬提出的解决方案，我们试试</p>
+<h3 id="sync-map">
+    <a href="#sync-map" class="header-anchor">#</a>
+    Sync. Map
+</h3><p>这是某大佬提出的解决方案，我们试试</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -791,7 +777,7 @@ go tool pprof 是一个工具可以查看代码测评产生的内存日志</p>
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -806,6 +792,37 @@ go tool pprof 是一个工具可以查看代码测评产生的内存日志</p>
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -817,9 +834,7 @@ go tool pprof 是一个工具可以查看代码测评产生的内存日志</p>
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -903,8 +918,6 @@ go tool pprof 是一个工具可以查看代码测评产生的内存日志</p>
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

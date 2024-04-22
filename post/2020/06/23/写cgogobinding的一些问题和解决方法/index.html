@@ -1,38 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。
-内存泄露 类型转换 函数调用 非标准c接口（c&#43;&#43;问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路：
-一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。
-问了前辈说能给提供一个.h头文件，遂开始写了。想
-开始 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。
-1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &amp;#34;C&amp;#34; 其中 import &amp;quot;C&amp;quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。
-将自定义的C类型 -&amp;gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &amp;quot;C&amp;quot;
-类型转化只要注意一个问题就好，就是类型是否经过 typedef 类型定义，如果经过了，在golang中无需指定struct'><title>写cgo(gobinding)的一些问题和解决方法</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="# 综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。 内存泄露 类型转换 函数调用 非标准c接口（c++问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路： 一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。 问了前辈说能给提供一个.h头文件，遂开始写了。想 # 开始 # 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。 1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &#34;C&#34; 其中 import &quot;C&quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。 # 将自定义的C类型 -&gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &quot;C&quot;">
+<title>写cgo(gobinding)的一些问题和解决方法</title>
 
 <link rel='canonical' href='/post/2020/06/23/%E5%86%99cgogobinding%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='写cgo(gobinding)的一些问题和解决方法'>
-<meta property='og:description' content='综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。
-内存泄露 类型转换 函数调用 非标准c接口（c&#43;&#43;问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路：
-一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。
-问了前辈说能给提供一个.h头文件，遂开始写了。想
-开始 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。
-1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &amp;#34;C&amp;#34; 其中 import &amp;quot;C&amp;quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。
-将自定义的C类型 -&amp;gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &amp;quot;C&amp;quot;
-类型转化只要注意一个问题就好，就是类型是否经过 typedef 类型定义，如果经过了，在golang中无需指定struct'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="写cgo(gobinding)的一些问题和解决方法">
+<meta property='og:description' content="# 综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。 内存泄露 类型转换 函数调用 非标准c接口（c++问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路： 一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。 问了前辈说能给提供一个.h头文件，遂开始写了。想 # 开始 # 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。 1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &#34;C&#34; 其中 import &quot;C&quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。 # 将自定义的C类型 -&gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &quot;C&quot;">
 <meta property='og:url' content='/post/2020/06/23/%E5%86%99cgogobinding%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-23T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-23T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="写cgo(gobinding)的一些问题和解决方法">
-<meta name="twitter:description" content="综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。
-内存泄露 类型转换 函数调用 非标准c接口（c&#43;&#43;问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路：
-一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。
-问了前辈说能给提供一个.h头文件，遂开始写了。想
-开始 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。
-1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &amp;#34;C&amp;#34; 其中 import &amp;quot;C&amp;quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。
-将自定义的C类型 -&amp;gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &amp;quot;C&amp;quot;
-类型转化只要注意一个问题就好，就是类型是否经过 typedef 类型定义，如果经过了，在golang中无需指定struct">
+<meta name="twitter:description" content="# 综述 写 cgo 不是写出来的，而是调试出来的，想要给一个c库写 gobinding 往往会遇得到你意向不大到的困难。 内存泄露 类型转换 函数调用 非标准c接口（c++问题） 这里以我的经历开始记录一下，我给公司写一个动态库 so 的 gobinding 的过程。简述一下我曲折的道路： 一开始，公司只给一个 so ，和原来用 python 写的一个 gobinding ，我发现原来的py脚本用的类似于 ffi 的方法，就是动态 load ，总之我也用这种方法，但是无论如何不是这个类找不到就是哪个函数无法调用。看完教程之后我知道大家都有源文件，难度会容易一些。 问了前辈说能给提供一个.h头文件，遂开始写了。想 # 开始 # 在 golang 中引入头文件 如果头文件不是很长的话，建议直接写在一个文件里。 1 2 3 4 5 6 7 8 9 package goskynet /* #cgo LDFLAGS: -L${SRCDIR} -lskynet_external #include ... .... .... */ import &#34;C&#34; 其中 import &quot;C&quot; 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。 # 将自定义的C类型 -&gt; golang 目的是，在包外调用时无需再 针对C相关的包 申明任何东西，也就是无需再外部 import &quot;C&quot;">
   
 
 
@@ -91,7 +71,6 @@
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -102,7 +81,6 @@
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -113,7 +91,6 @@
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -124,7 +101,6 @@
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -134,31 +110,12 @@
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -166,7 +123,7 @@
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -174,13 +131,17 @@
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -195,6 +156,9 @@
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -232,13 +196,16 @@
 
     
 </div>
+
 </header>
 
     <section class="article-content">
     
     
-    <h2 id="综述">综述</h2>
-<p>写 <code>cgo</code> 不是写出来的，而是调试出来的，想要给一个c库写 <code>gobinding</code> 往往会遇得到你意向不大到的困难。</p>
+    <h2 id="综述">
+    <a href="#%e7%bb%bc%e8%bf%b0" class="header-anchor">#</a>
+    综述
+</h2><p>写 <code>cgo</code> 不是写出来的，而是调试出来的，想要给一个c库写 <code>gobinding</code> 往往会遇得到你意向不大到的困难。</p>
 <ul>
 <li>内存泄露</li>
 <li>类型转换</li>
@@ -254,9 +221,13 @@
 <p>问了前辈说能给提供一个.h头文件，遂开始写了。想</p>
 </li>
 </ul>
-<h2 id="开始">开始</h2>
-<h3 id="在-golang-中引入头文件">在 <code>golang</code> 中引入头文件</h3>
-<p>如果头文件不是很长的话，建议直接写在一个文件里。</p>
+<h2 id="开始">
+    <a href="#%e5%bc%80%e5%a7%8b" class="header-anchor">#</a>
+    开始
+</h2><h3 id="在-golang-中引入头文件">
+    <a href="#%e5%9c%a8-golang-%e4%b8%ad%e5%bc%95%e5%85%a5%e5%a4%b4%e6%96%87%e4%bb%b6" class="header-anchor">#</a>
+    在 <code>golang</code> 中引入头文件
+</h3><p>如果头文件不是很长的话，建议直接写在一个文件里。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -282,8 +253,10 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>其中 <code>import &quot;C&quot;</code> 和其他的引入不能放在一个括号里，必须单独，并且必须贴紧上方注释。</p>
-<h3 id="将自定义的c类型---golang">将自定义的C类型 -&gt; golang</h3>
-<p>目的是，在包外调用时无需再 <strong>针对C相关的包</strong> 申明任何东西，也就是无需再外部 <code>import &quot;C&quot;</code></p>
+<h3 id="将自定义的c类型---golang">
+    <a href="#%e5%b0%86%e8%87%aa%e5%ae%9a%e4%b9%89%e7%9a%84c%e7%b1%bb%e5%9e%8b---golang" class="header-anchor">#</a>
+    将自定义的C类型 -&gt; golang
+</h3><p>目的是，在包外调用时无需再 <strong>针对C相关的包</strong> 申明任何东西，也就是无需再外部 <code>import &quot;C&quot;</code></p>
 <p>类型转化只要注意一个问题就好，就是类型是否经过 <code>typedef</code> 类型定义，如果经过了，在golang中无需指定struct</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -312,10 +285,14 @@
 </div>
 </div><p>我在头文件中看到了，所有类都经过了typedef，无需我申明了。</p>
 <p>于是我首先给所有类的用type定义到golang这边来。</p>
-<h3 id="翻译函数">翻译函数</h3>
-<p>把C的函数放到golang这边，并不难，但是在类型转化过程中会有一些困难。</p>
-<h4 id="举例1">举例1</h4>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h3 id="翻译函数">
+    <a href="#%e7%bf%bb%e8%af%91%e5%87%bd%e6%95%b0" class="header-anchor">#</a>
+    翻译函数
+</h3><p>把C的函数放到golang这边，并不难，但是在类型转化过程中会有一些困难。</p>
+<h4 id="举例1">
+    <a href="#%e4%b8%be%e4%be%8b1" class="header-anchor">#</a>
+    举例1
+</h4><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span></code></pre></td>
@@ -353,8 +330,10 @@
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h4 id="举例2">举例2</h4>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+</div><h4 id="举例2">
+    <a href="#%e4%b8%be%e4%be%8b2" class="header-anchor">#</a>
+    举例2
+</h4><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
@@ -428,7 +407,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -443,6 +422,37 @@
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -454,9 +464,7 @@
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -540,8 +548,6 @@
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

@@ -1,47 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。
-今天的任务是 &amp;ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&amp;rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中
-本节课的代码，全部在上一节课的基础上
-Let&amp;rsquo;s do it
-0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。
-1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情：
-请求长度比你想象的长一点 请求长度比你想象的短一点 &amp;hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。
-我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？
-我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。
-1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &amp;#34;GET / HTTP/1.1\r\n&amp;#34; auto idx{line}; while(*idx!=&amp;#39; &amp;#39; || *idx !'><title>手动用cpp实现http(四)</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。 今天的任务是 &ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中 本节课的代码，全部在上一节课的基础上 Let&rsquo;s do it # 0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。 1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情： 请求长度比你想象的长一点 请求长度比你想象的短一点 &hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。 我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？ 我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。 1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &#34;GET / HTTP/1.1\\r\\n&#34; auto idx{line}; while(*idx!=&#39; &#39; || *idx !">
+<title>手动用cpp实现http(四)</title>
 
 <link rel='canonical' href='/post/2020/08/04/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E5%9B%9B/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='手动用cpp实现http(四)'>
-<meta property='og:description' content='在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。
-今天的任务是 &amp;ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&amp;rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中
-本节课的代码，全部在上一节课的基础上
-Let&amp;rsquo;s do it
-0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。
-1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情：
-请求长度比你想象的长一点 请求长度比你想象的短一点 &amp;hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。
-我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？
-我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。
-1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &amp;#34;GET / HTTP/1.1\r\n&amp;#34; auto idx{line}; while(*idx!=&amp;#39; &amp;#39; || *idx !'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="手动用cpp实现http(四)">
+<meta property='og:description' content="在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。 今天的任务是 &ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中 本节课的代码，全部在上一节课的基础上 Let&rsquo;s do it # 0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。 1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情： 请求长度比你想象的长一点 请求长度比你想象的短一点 &hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。 我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？ 我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。 1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &#34;GET / HTTP/1.1\\r\\n&#34; auto idx{line}; while(*idx!=&#39; &#39; || *idx !">
 <meta property='og:url' content='/post/2020/08/04/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E5%9B%9B/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-04T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-04T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="手动用cpp实现http(四)">
-<meta name="twitter:description" content="在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。
-今天的任务是 &amp;ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&amp;rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中
-本节课的代码，全部在上一节课的基础上
-Let&amp;rsquo;s do it
-0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。
-1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\r\nKey: Value\r\n\r\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情：
-请求长度比你想象的长一点 请求长度比你想象的短一点 &amp;hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。
-我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？
-我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。
-1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &amp;#34;GET / HTTP/1.1\r\n&amp;#34; auto idx{line}; while(*idx!=&amp;#39; &amp;#39; || *idx !">
+<meta name="twitter:description" content="在之前的课程(三)中我们讲了一些和配置加载与log程序的工作。 今天的任务是 &ldquo;[难]定义一个bufReader类，并且使用该bufReader从TCP流中解析HTTP请求和返回体&rdquo;，这是唯一一个被我标识为难的东西，其实也不难，只是相对繁琐。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/4-bufreader 中 本节课的代码，全部在上一节课的基础上 Let&rsquo;s do it # 0x1 TCP基于流传输 TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。 1 2 3 4 GET / HTTP/1.1 Key: Value body 把他画成上面这样只是为了方便理解，其实他是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbody。而且，请求和请求之间没有什么界限。因此他们会是这样的：GET / HTTP/1.1\\r\\nKey: Value\\r\\n\\r\\nbodyGET /...，你在读取的过程中可能会遇得到很多奇怪的事情： 请求长度比你想象的长一点 请求长度比你想象的短一点 &hellip;. 在读取过程中总会遇到各种不同的问题，读起来会很痛苦，如果写一个reader帮助我们实现一些类似 readline() 或 read_n()的函数，这样我们起码能在读取的过程中，节省一些精力。 我们倒过来思考吧，如果我现在有了一行数据，我应该怎么提取出数据呢？ 我们一起看一下这段代码，我们尝试简单的从一行 char 字符串中提取出请求的 method。 1 2 3 4 5 6 7 8 9 10 11 12 const char *line = &#34;GET / HTTP/1.1\\r\\n&#34; auto idx{line}; while(*idx!=&#39; &#39; || *idx !">
   
 
 
@@ -100,7 +71,6 @@ Let&amp;rsquo;s do it
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -111,7 +81,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -122,7 +91,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -133,7 +101,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -143,31 +110,12 @@ Let&amp;rsquo;s do it
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -175,7 +123,7 @@ Let&amp;rsquo;s do it
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -183,13 +131,17 @@ Let&amp;rsquo;s do it
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -204,6 +156,9 @@ Let&amp;rsquo;s do it
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -241,6 +196,7 @@ Let&amp;rsquo;s do it
 
     
 </div>
+
 </header>
 
     <section class="article-content">
@@ -253,8 +209,10 @@ Let&amp;rsquo;s do it
     >https://github.com/dashjay/http_demo/tree/master/4-bufreader</a> 中</p>
 <p>本节课的代码，全部在上一节课的基础上</p>
 <p>Let&rsquo;s do it</p>
-<h2 id="0x1-tcp基于流传输">0x1 TCP基于流传输</h2>
-<p>TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。</p>
+<h2 id="0x1-tcp基于流传输">
+    <a href="#0x1-tcp%e5%9f%ba%e4%ba%8e%e6%b5%81%e4%bc%a0%e8%be%93" class="header-anchor">#</a>
+    0x1 TCP基于流传输
+</h2><p>TCP传输从不以包为单位，也就是说，一个 GET 请求或一个 POST 请求并不是一个包。也不是你所想象的（我们之前描述的样子）,我们想象总是很美好，以为它是这个样子的，读起来很轻松。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -314,8 +272,10 @@ Let&amp;rsquo;s do it
 <li>std::find(&hellip;)</li>
 <li>std::string.assign(&hellip;)</li>
 </ul>
-<h2 id="0x2-bufreader">0x2 BufReader</h2>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h2 id="0x2-bufreader">
+    <a href="#0x2-bufreader" class="header-anchor">#</a>
+    0x2 BufReader
+</h2><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
@@ -337,8 +297,10 @@ Let&amp;rsquo;s do it
 <li>我们都不是代码大神，本次我将从golang中借鉴（抄袭），来实现简洁的功能</li>
 <li>如果buf尺寸不够用了，会提供其他方法，并且直接赋值到目标中，减少拷贝次数。</li>
 </ol>
-<h3 id="纯栈区操作">纯栈区操作</h3>
-<p>可以认为 <code>char *key = new char[n];</code> 这样分配的内存在堆上，操作慢，并且需要手动释放，唯一的优点就是空间大。</p>
+<h3 id="纯栈区操作">
+    <a href="#%e7%ba%af%e6%a0%88%e5%8c%ba%e6%93%8d%e4%bd%9c" class="header-anchor">#</a>
+    纯栈区操作
+</h3><p>可以认为 <code>char *key = new char[n];</code> 这样分配的内存在堆上，操作慢，并且需要手动释放，唯一的优点就是空间大。</p>
 <p>为了速度我们必须要在栈区分配空间，我们有两个方式，第一是通过模板(cpp的模板又可以开讲一节课了……我不立flag了)来创建，另一个是直接写死在类中，两种情况下，都必须是常量，用起来都差不多，我选择模板创建。</p>
 <p>下面就是我认为一个 BufReader 应该有的成员。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -378,8 +340,10 @@ Let&amp;rsquo;s do it
 <p>有新的数据写入的时候，会从 m_w 的位置开始写，并且写多少 m_w 就往后移动多少。</p>
 <p>你没猜错，读也是一样的，从 m_r 开始读，读多少 m_r 就往后移动多少。当要读的数量 n &gt; (m_w - m_r) 时，就需要进行填充 <code>fill()</code> 了。</p>
 <p>让我们先来尝试使用一个填充函数吧。</p>
-<h3 id="1-fill">1. fill()</h3>
-<p>该函数的作用是在在尝试 read，没数据或者有数据但是数据不够的时候调用。（下面代码包含注释写清楚了为什么这样写）</p>
+<h3 id="1-fill">
+    <a href="#1-fill" class="header-anchor">#</a>
+    1. fill()
+</h3><p>该函数的作用是在在尝试 read，没数据或者有数据但是数据不够的时候调用。（下面代码包含注释写清楚了为什么这样写）</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -528,8 +492,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span> <span style="color:#fff;font-weight:bold">virtual</span> ssize_t read(<span style="color:#fff;font-weight:bold">void</span> *buf, size_t n);
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="read_untilchar-delim">read_until(char delim)</h3>
-<p>我们在HTTP的操作中比较常见的是希望能读到 <code>\r\n</code> 或 <code>\n</code> 为结束。因此希望能定义一个叫做 read_until 函数，能够在某个字符出现之前，一直读取。</p>
+</div><h3 id="read_untilchar-delim">
+    <a href="#read_untilchar-delim" class="header-anchor">#</a>
+    read_until(char delim)
+</h3><p>我们在HTTP的操作中比较常见的是希望能读到 <code>\r\n</code> 或 <code>\n</code> 为结束。因此希望能定义一个叫做 read_until 函数，能够在某个字符出现之前，一直读取。</p>
 <p>这个函数你可以先尝试自己写，我会为你提供头部定义，返回前别忘了，移动你的 m_r 和 m_w 指针</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -555,8 +521,10 @@ Let&amp;rsquo;s do it
 </span></span></span><span style="display:flex;"><span><span style="color:#007f7f">// res.second 代表第一个碰到的 &#39;\n&#39; 的指针
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="readline">readline</h3>
-<p>这个函数依赖于上方的函数，实现起来也很简单，所以我把实现直接写出来了</p>
+</div><h3 id="readline">
+    <a href="#readline" class="header-anchor">#</a>
+    readline
+</h3><p>这个函数依赖于上方的函数，实现起来也很简单，所以我把实现直接写出来了</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -571,8 +539,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="read_nsize_t-n">read_n(size_t n)</h3>
-<p>尝试读取指定长度的内容，我计划为这个函数提供两套实现（重载）。</p>
+</div><h3 id="read_nsize_t-n">
+    <a href="#read_nsize_t-n" class="header-anchor">#</a>
+    read_n(size_t n)
+</h3><p>尝试读取指定长度的内容，我计划为这个函数提供两套实现（重载）。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -599,18 +569,24 @@ Let&amp;rsquo;s do it
 <li>如果 n &gt; 缓存数量 &lt; bufSize，先执行 fill 到足够再执行 1</li>
 <li>如果 n &gt; bufSize，先把缓存部分直接assign进去，剩下的部分直接从socket读取，高效。</li>
 </ol>
-<h3 id="暂停--思考">暂停 + 思考</h3>
-<p>写到这里我已经不知道教程怎么写了，因为也许你没有完成这几个函数，想完成了再继续。</p>
+<h3 id="暂停--思考">
+    <a href="#%e6%9a%82%e5%81%9c--%e6%80%9d%e8%80%83" class="header-anchor">#</a>
+    暂停 + 思考
+</h3><p>写到这里我已经不知道教程怎么写了，因为也许你没有完成这几个函数，想完成了再继续。</p>
 <p>目前按照模块化编程的道理，我们应该写一系列的 test，并且对 bufReader类进行大量自动化测试，没问题了再继续，但是我不决定这样做，我们的最主要的目的是为了理解 HTTP 和 手动尝试一次 HTTP 编程，如果你现在没有完成 bufReader 类，你不需要太担心。</p>
 <p>这个 bufReader 我是参考的 golang 的 bufio，它的源代码在这里 <a class="link" href="https://github.com/golang/go/blob/master/src/bufio/bufio.go"  target="_blank" rel="noopener"
     >https://github.com/golang/go/blob/master/src/bufio/bufio.go</a>, 自动化测试流程也在文件夹内：<a class="link" href="https://github.com/golang/go/tree/master/src/bufio"  target="_blank" rel="noopener"
     >https://github.com/golang/go/tree/master/src/bufio</a>，我准备先屏蔽这小部分内容，对下面的内容进行仔细讲解。</p>
 <p>在底部我们有整个bufReader实现的源代码，github仓库中也有我们课程配套的代码。</p>
-<h2 id="0x3-使用-bufreader-解析-http-请求">0x3 使用 bufReader 解析 HTTP 请求</h2>
-<p>有时候要有勇气，大胆往前走，如果你因为什么东西卡主了，多半是肺热，吃点葵花牌小儿……</p>
+<h2 id="0x3-使用-bufreader-解析-http-请求">
+    <a href="#0x3-%e4%bd%bf%e7%94%a8-bufreader-%e8%a7%a3%e6%9e%90-http-%e8%af%b7%e6%b1%82" class="header-anchor">#</a>
+    0x3 使用 bufReader 解析 HTTP 请求
+</h2><p>有时候要有勇气，大胆往前走，如果你因为什么东西卡主了，多半是肺热，吃点葵花牌小儿……</p>
 <p>开始吧，不皮了 ;)</p>
-<h3 id="解析请求行">解析请求行</h3>
-<p>记得我们刚才readline返回的是一个 pair 么？这个pair有头有尾，我们的解析请求行的函数就这么写吧。</p>
+<h3 id="解析请求行">
+    <a href="#%e8%a7%a3%e6%9e%90%e8%af%b7%e6%b1%82%e8%a1%8c" class="header-anchor">#</a>
+    解析请求行
+</h3><p>记得我们刚才readline返回的是一个 pair 么？这个pair有头有尾，我们的解析请求行的函数就这么写吧。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -719,8 +695,10 @@ Let&amp;rsquo;s do it
 <blockquote>
 <p><strong>说明：</strong> 这些解析函数不建议写在 Request 类中，虽然这个函数是操作 Request 类的，但是通常一个请求对象不会自己做这样的操作，应该是服务类来完成这个操作，因此我建议保持函数的独立，传入 Request 作为引用。</p>
 </blockquote>
-<h3 id="解析头部">解析头部</h3>
-<p>试着自己实现这样的函数</p>
+<h3 id="解析头部">
+    <a href="#%e8%a7%a3%e6%9e%90%e5%a4%b4%e9%83%a8" class="header-anchor">#</a>
+    解析头部
+</h3><p>试着自己实现这样的函数</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -802,8 +780,10 @@ Let&amp;rsquo;s do it
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>我们可以用这样一个函数来每次读取到 <code>'\n'</code>，并且调用 <code>parse_single_header()</code> 完成头部的插入，当然我们也可选择这部分代码直接放置到 read_request 这个函数中。</p>
-<h3 id="读取body--整体读取">读取body + 整体读取</h3>
-<p>因为读取请求body的方式暂时只考虑一个按照 <code>Content-Length</code> 来读取这种情况。</p>
+<h3 id="读取body--整体读取">
+    <a href="#%e8%af%bb%e5%8f%96body--%e6%95%b4%e4%bd%93%e8%af%bb%e5%8f%96" class="header-anchor">#</a>
+    读取body + 整体读取
+</h3><p>因为读取请求body的方式暂时只考虑一个按照 <code>Content-Length</code> 来读取这种情况。</p>
 <p>因此我们定义这样一个函数</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -931,8 +911,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>server: http-demo-1
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h2 id="0x4-完成bufio">0x4 完成bufio</h2>
-<p>你那边因为bufio并没有完成，所以暂时无法和我一样运行并获得结果，因此让我们先浏览一下我写的bufio的源代码吧。</p>
+</div><h2 id="0x4-完成bufio">
+    <a href="#0x4-%e5%ae%8c%e6%88%90bufio" class="header-anchor">#</a>
+    0x4 完成bufio
+</h2><p>你那边因为bufio并没有完成，所以暂时无法和我一样运行并获得结果，因此让我们先浏览一下我写的bufio的源代码吧。</p>
 <p>⚠️，这段代码本身就很难控制，我也是初学者，即便是抄，也很难从golang那边完全抄过来。并不保证这段代码能用于生产环境，请谨慎使用。</p>
 <p>仅仅对于初学，这段代码完全够了。</p>
 <p>📌既然都从golang那边抄过来了，为什么不直接用golang，非要用cpp在这里墨迹？</p>
@@ -947,8 +929,10 @@ Let&amp;rsquo;s do it
 </ol>
 <p>这时候我已经坐不住了，开始尝试手动纯栈区，基于 TCP 实现 HTTP 操作，于是有了今天你们看到的这个坑。</p>
 </blockquote>
-<h3 id="bufio-的源代码">bufio 的源代码</h3>
-<p>我引入了一个 errors 命名空间，在里面定义了一个异常类，如果你不知道异常……（我在这里立一个flag，要开一篇文章讲讲异常）</p>
+<h3 id="bufio-的源代码">
+    <a href="#bufio-%e7%9a%84%e6%ba%90%e4%bb%a3%e7%a0%81" class="header-anchor">#</a>
+    bufio 的源代码
+</h3><p>我引入了一个 errors 命名空间，在里面定义了一个异常类，如果你不知道异常……（我在这里立一个flag，要开一篇文章讲讲异常）</p>
 <p>我在底部放了一些Q&amp;A，看到一半觉得很难受的可以到底部看看</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -1506,8 +1490,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span><span style="color:#0f0;font-weight:bold">#endif </span><span style="color:#007f7f">// HTTPDEMO_BUFIO_HPP
 </span></span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="qas">Q&amp;As</h3>
-<ol>
+</div><h3 id="qas">
+    <a href="#qas" class="header-anchor">#</a>
+    Q&amp;As
+</h3><ol>
 <li>
 <p>为什么你的代码框的边角那么奇怪，博客地址<a class="link" href="https://dashjay.github.io/"  target="_blank" rel="noopener"
     >https://dashjay.github.io/</a>。</p>
@@ -1522,8 +1508,10 @@ Let&amp;rsquo;s do it
     >https://github.com/dashjay/http_demo</a></p>
 </li>
 </ol>
-<h3 id="附录-使用bufreader-解析-http-请求代码示例">附录 使用bufReader 解析 HTTP 请求代码示例</h3>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h3 id="附录-使用bufreader-解析-http-请求代码示例">
+    <a href="#%e9%99%84%e5%bd%95-%e4%bd%bf%e7%94%a8bufreader-%e8%a7%a3%e6%9e%90-http-%e8%af%b7%e6%b1%82%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#</a>
+    附录 使用bufReader 解析 HTTP 请求代码示例
+</h3><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
@@ -1687,8 +1675,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h2 id="0x5-使用-bufreader-解析-http-返回">0x5 使用 bufReader 解析 HTTP 返回</h2>
-<p>不多说了，情况都差不多，贴上代码然后你可以自己看看：</p>
+</div><h2 id="0x5-使用-bufreader-解析-http-返回">
+    <a href="#0x5-%e4%bd%bf%e7%94%a8-bufreader-%e8%a7%a3%e6%9e%90-http-%e8%bf%94%e5%9b%9e" class="header-anchor">#</a>
+    0x5 使用 bufReader 解析 HTTP 返回
+</h2><p>不多说了，情况都差不多，贴上代码然后你可以自己看看：</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -1810,13 +1800,17 @@ Let&amp;rsquo;s do it
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>写到这里我们可以整理一下整个项目的目录。</p>
-<h2 id="0x6-同时测试请求和返回">0x6 同时测试请求和返回</h2>
-<p>请求的读取测试起来还挺方便的返回的测试就比较难办了，那我们应该怎么办呢？</p>
+<h2 id="0x6-同时测试请求和返回">
+    <a href="#0x6-%e5%90%8c%e6%97%b6%e6%b5%8b%e8%af%95%e8%af%b7%e6%b1%82%e5%92%8c%e8%bf%94%e5%9b%9e" class="header-anchor">#</a>
+    0x6 同时测试请求和返回
+</h2><p>请求的读取测试起来还挺方便的返回的测试就比较难办了，那我们应该怎么办呢？</p>
 <p>我们这次尝试编写一个代理服务器：</p>
 <p>你使用 curl 发送请求给服务，服务将你的请求转发到第三方服务器，第三方服务器返回，再转发回用户你，很酷吧。</p>
 <p>让我们先来整理一下我们的目录：</p>
-<h3 id="整理项目目录">整理项目目录</h3>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h3 id="整理项目目录">
+    <a href="#%e6%95%b4%e7%90%86%e9%a1%b9%e7%9b%ae%e7%9b%ae%e5%bd%95" class="header-anchor">#</a>
+    整理项目目录
+</h3><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
@@ -1841,8 +1835,10 @@ Let&amp;rsquo;s do it
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>errors类也直接声明在 bufio.hpp 里了，为了方便，减少文件数。</p>
-<h3 id="启动一个第三方服务器">启动一个第三方服务器</h3>
-<p>请放心，不会配置什么 apache 或者 nginx 的。</p>
+<h3 id="启动一个第三方服务器">
+    <a href="#%e5%90%af%e5%8a%a8%e4%b8%80%e4%b8%aa%e7%ac%ac%e4%b8%89%e6%96%b9%e6%9c%8d%e5%8a%a1%e5%99%a8" class="header-anchor">#</a>
+    启动一个第三方服务器
+</h3><p>请放心，不会配置什么 apache 或者 nginx 的。</p>
 <p>如果你的计算机中安装了 <code>python3</code>,请随便选一个目录运行以下命令</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -1858,8 +1854,10 @@ Let&amp;rsquo;s do it
 <p>请确保以上方法成功，或者你自己有其他更简单的方式能够启动一个 http 服务器。</p>
 <p>注意：如果你使用了 npm 的 http-server，它的返回包使用的是 Transfer-Encoding 的方式，我们暂时没有支持这种读取body的方式，你可以从 <a class="link" href="https://www.rfc-editor.org/rfc/rfc2616.html#section-14.41"  target="_blank" rel="noopener"
     >https://www.rfc-editor.org/rfc/rfc2616.html#section-14.41</a> 了解更多。</p>
-<h3 id="编写主程序">编写主程序</h3>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h3 id="编写主程序">
+    <a href="#%e7%bc%96%e5%86%99%e4%b8%bb%e7%a8%8b%e5%ba%8f" class="header-anchor">#</a>
+    编写主程序
+</h3><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 2
@@ -2023,8 +2021,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="运行结果">运行结果</h3>
-<p>当我们把http的服务器运行在8080端口，并且可以直接通过curl或者浏览器方式时。</p>
+</div><h3 id="运行结果">
+    <a href="#%e8%bf%90%e8%a1%8c%e7%bb%93%e6%9e%9c" class="header-anchor">#</a>
+    运行结果
+</h3><p>当我们把http的服务器运行在8080端口，并且可以直接通过curl或者浏览器方式时。</p>
 <p>我们再把这个程序运行在8081端口，并且访问8081端口，程序执行流程如下。</p>
 <p>你的curl同http-demo之间建立连接，并且发送一个请求，http-demo读取到请求，然后转发给 python 的服务器并且得到返回值。读取到返回包后，你将返回包，写回客户端并且断开连接，程序退出。</p>
 <p>我这边curl收到的输出，和直接请求8080服务器的输出是一模一样的。</p>
@@ -2084,8 +2084,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>&lt;/html&gt;
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h2 id="0x7-总结">0x7 总结</h2>
-<p><strong>我们本次工作完成了哪些内容？</strong></p>
+</div><h2 id="0x7-总结">
+    <a href="#0x7-%e6%80%bb%e7%bb%93" class="header-anchor">#</a>
+    0x7 总结
+</h2><p><strong>我们本次工作完成了哪些内容？</strong></p>
 <p>这是内容最多的一节课</p>
 <ol>
 <li>
@@ -2126,7 +2128,7 @@ Let&amp;rsquo;s do it
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -2141,6 +2143,37 @@ Let&amp;rsquo;s do it
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -2152,9 +2185,7 @@ Let&amp;rsquo;s do it
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -2238,8 +2269,6 @@ Let&amp;rsquo;s do it
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"

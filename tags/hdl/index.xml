@@ -49,14 +49,22 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;有了以上 &lt;strong&gt;Makefile&lt;/strong&gt; ，将 *&lt;strong&gt;.v&lt;/strong&gt;文件和 &lt;strong&gt;Makefile&lt;/strong&gt; 放在一起，执行 &lt;code&gt;make&lt;/code&gt; 命令即可完成相应操作&lt;/p&gt;
 &lt;p&gt;但是用这种方式，生成的波形只能使用GTKwave来查看，并且当有一些复杂的情况出现时候，iverilog就无法处理了，所以我们使用Intel提供的免费的Modelsim来完成仿真，仿真资料比较少，全是图形化界面的介绍，道路坎坷。&lt;/p&gt;
-&lt;h3 id=&#34;0x0下载全套工具&#34;&gt;0x0：下载全套工具&lt;/h3&gt;
-&lt;p&gt;我在 intel 官网下载了 lite 版本，最小套装，大同小异，包大小 100 多 M，这里就不留源文件了。
+&lt;h3 id=&#34;0x0下载全套工具&#34;&gt;
+    &lt;a href=&#34;#0x0%e4%b8%8b%e8%bd%bd%e5%85%a8%e5%a5%97%e5%b7%a5%e5%85%b7&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    0x0：下载全套工具
+&lt;/h3&gt;&lt;p&gt;我在 intel 官网下载了 lite 版本，最小套装，大同小异，包大小 100 多 M，这里就不留源文件了。
 我下载的是：&lt;strong&gt;Quartus-lite-18.1.0.625-linux.tar&lt;/strong&gt;&lt;/p&gt;
-&lt;h3 id=&#34;0x1安装&#34;&gt;0x1：安装&lt;/h3&gt;
-&lt;p&gt;解压之后有一键安装脚本，运行的时候会提示缺库，安装对应的库文件就可以使用了。&lt;/p&gt;
-&lt;h3 id=&#34;0x2仿真出波形&#34;&gt;0x2：仿真出波形&lt;/h3&gt;
-&lt;h4 id=&#34;0x21-vlog工具&#34;&gt;0x21. vlog工具&lt;/h4&gt;
-&lt;p&gt;路径位于 &lt;strong&gt;intelFPGA_lite/18.1/modelsim_ase/bin/vlog&lt;/strong&gt;
+&lt;h3 id=&#34;0x1安装&#34;&gt;
+    &lt;a href=&#34;#0x1%e5%ae%89%e8%a3%85&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    0x1：安装
+&lt;/h3&gt;&lt;p&gt;解压之后有一键安装脚本，运行的时候会提示缺库，安装对应的库文件就可以使用了。&lt;/p&gt;
+&lt;h3 id=&#34;0x2仿真出波形&#34;&gt;
+    &lt;a href=&#34;#0x2%e4%bb%bf%e7%9c%9f%e5%87%ba%e6%b3%a2%e5%bd%a2&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    0x2：仿真出波形
+&lt;/h3&gt;&lt;h4 id=&#34;0x21-vlog工具&#34;&gt;
+    &lt;a href=&#34;#0x21-vlog%e5%b7%a5%e5%85%b7&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    0x21. vlog工具
+&lt;/h4&gt;&lt;p&gt;路径位于 &lt;strong&gt;intelFPGA_lite/18.1/modelsim_ase/bin/vlog&lt;/strong&gt;
 执行 *&lt;em&gt;vlog &lt;em&gt;.v&lt;/em&gt;&lt;/em&gt; 即可对当前目录所有 &lt;strong&gt;.v&lt;/strong&gt; 文件进行编译操作&lt;/p&gt;
 &lt;p&gt;我给了一个模板 *&lt;strong&gt;.v&lt;/strong&gt; 文件&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
@@ -112,8 +120,10 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;运行&lt;strong&gt;vlog *.v&lt;/strong&gt;命令即可在当前目录下生成一个work文件夹，里面有一些编译的成果，不过不用太在意文件的具体内容。&lt;/p&gt;
-&lt;h4 id=&#34;0x22使用vsim&#34;&gt;0x22.使用vsim&lt;/h4&gt;
-&lt;p&gt;命令是&lt;/p&gt;
+&lt;h4 id=&#34;0x22使用vsim&#34;&gt;
+    &lt;a href=&#34;#0x22%e4%bd%bf%e7%94%a8vsim&#34; class=&#34;header-anchor&#34;&gt;#&lt;/a&gt;
+    0x22.使用vsim
+&lt;/h4&gt;&lt;p&gt;命令是&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;
 &lt;table style=&#34;border-spacing:0;padding:0;margin:0;border:0;&#34;&gt;&lt;tr&gt;&lt;td style=&#34;vertical-align:top;padding:0;margin:0;border:0;&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; style=&#34;color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;&#34;&gt;&lt;code&gt;&lt;span style=&#34;white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272&#34;&gt;1

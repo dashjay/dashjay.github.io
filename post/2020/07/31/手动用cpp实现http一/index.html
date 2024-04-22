@@ -1,38 +1,18 @@
 <!DOCTYPE html>
 <html lang="en-us" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='创建于 2020-07-31，最终修订于 2020-08-06
-在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP，
-今天的任务是 &amp;ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&amp;rdquo;。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中
-Let&amp;rsquo;s do it
-0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&amp;lt;iostream&amp;gt; int main(){ std::cout &amp;lt;&amp;lt; &amp;#34;Hello World!&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 我们本可以使用如下命令进行编译并且运行
-1 2 3 g&#43;&#43; -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1]
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &amp;#34;c&#43;&#43;&amp;#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &amp;#34;;&amp;#34; &amp;#34; &amp;#34; CMAKE_CXX_FLAGS &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) message(STATUS &amp;#34;CMAKE_CXX_FLAGS: &amp;#34; &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) # 添加一个可执行文件 add_executable(main main.'><title>手动用cpp实现http(一)</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="创建于 2020-07-31，最终修订于 2020-08-06 在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP， 今天的任务是 &ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&rdquo;。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中 Let&rsquo;s do it # 0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&lt;iostream&gt; int main(){ std::cout &lt;&lt; &#34;Hello World!&#34; &lt;&lt; &#39;\\n&#39;; } 我们本可以使用如下命令进行编译并且运行 1 2 3 g++ -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1] 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &#34;c++&#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &#34;;&#34; &#34; &#34; CMAKE_CXX_FLAGS &#34;${CMAKE_CXX_FLAGS}&#34;) message(STATUS &#34;CMAKE_CXX_FLAGS: &#34; &#34;${CMAKE_CXX_FLAGS}&#34;) # 添加一个可执行文件 add_executable(main main.">
+<title>手动用cpp实现http(一)</title>
 
 <link rel='canonical' href='/post/2020/07/31/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%80/'>
 
-<link rel="stylesheet" href="/scss/style.min.62b773f1f4f2d7eb89708a49b2831951f1ca0cd985d3cc0d740ee37c24bec3e5.css"><meta property='og:title' content='手动用cpp实现http(一)'>
-<meta property='og:description' content='创建于 2020-07-31，最终修订于 2020-08-06
-在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP，
-今天的任务是 &amp;ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&amp;rdquo;。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中
-Let&amp;rsquo;s do it
-0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&amp;lt;iostream&amp;gt; int main(){ std::cout &amp;lt;&amp;lt; &amp;#34;Hello World!&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 我们本可以使用如下命令进行编译并且运行
-1 2 3 g&#43;&#43; -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1]
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &amp;#34;c&#43;&#43;&amp;#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &amp;#34;;&amp;#34; &amp;#34; &amp;#34; CMAKE_CXX_FLAGS &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) message(STATUS &amp;#34;CMAKE_CXX_FLAGS: &amp;#34; &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) # 添加一个可执行文件 add_executable(main main.'>
+<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="手动用cpp实现http(一)">
+<meta property='og:description' content="创建于 2020-07-31，最终修订于 2020-08-06 在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP， 今天的任务是 &ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&rdquo;。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中 Let&rsquo;s do it # 0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&lt;iostream&gt; int main(){ std::cout &lt;&lt; &#34;Hello World!&#34; &lt;&lt; &#39;\\n&#39;; } 我们本可以使用如下命令进行编译并且运行 1 2 3 g++ -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1] 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &#34;c++&#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &#34;;&#34; &#34; &#34; CMAKE_CXX_FLAGS &#34;${CMAKE_CXX_FLAGS}&#34;) message(STATUS &#34;CMAKE_CXX_FLAGS: &#34; &#34;${CMAKE_CXX_FLAGS}&#34;) # 添加一个可执行文件 add_executable(main main.">
 <meta property='og:url' content='/post/2020/07/31/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%80/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-31T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-07-31T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:19:26&#43;00:00'/>
 <meta name="twitter:title" content="手动用cpp实现http(一)">
-<meta name="twitter:description" content="创建于 2020-07-31，最终修订于 2020-08-06
-在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP，
-今天的任务是 &amp;ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&amp;rdquo;。
-所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中
-Let&amp;rsquo;s do it
-0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&amp;lt;iostream&amp;gt; int main(){ std::cout &amp;lt;&amp;lt; &amp;#34;Hello World!&amp;#34; &amp;lt;&amp;lt; &amp;#39;\n&amp;#39;; } 我们本可以使用如下命令进行编译并且运行
-1 2 3 g&#43;&#43; -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1]
-1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &amp;#34;c&#43;&#43;&amp;#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &amp;#34;;&amp;#34; &amp;#34; &amp;#34; CMAKE_CXX_FLAGS &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) message(STATUS &amp;#34;CMAKE_CXX_FLAGS: &amp;#34; &amp;#34;${CMAKE_CXX_FLAGS}&amp;#34;) # 添加一个可执行文件 add_executable(main main.">
+<meta name="twitter:description" content="创建于 2020-07-31，最终修订于 2020-08-06 在之前的介绍课程(零)中我们说了要用六节课来实现一个HTTP， 今天的任务是 &ldquo;[易]简单的Cmake的教程，选用一个Socket库并实现一个echo&rdquo;。 所有的代码都在 https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo 中 Let&rsquo;s do it # 0x1 编写一个HelloWorld并尝试使用Cmake编译它 1 2 3 4 5 #include&lt;iostream&gt; int main(){ std::cout &lt;&lt; &#34;Hello World!&#34; &lt;&lt; &#39;\\n&#39;; } 我们本可以使用如下命令进行编译并且运行 1 2 3 g++ -o main main.cpp ./main Hello World! 但是我们要尝试使用一次Cmake[1] 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 # 指定cmake的版本，随意了，我们不会用太高级的功能 cmake_minimum_required(VERSION 3.16) # set可以设定一个变量 set(project_name http_demo) # 项目名称 ${xxxx} 可以导入之前的变量 project(${project_name}) set(CMAKE_CXX_COMPILER &#34;c++&#34;) # 编译器 set(CMAKE_CXX_STANDARD_REQUIRED True) set(CMAKE_CXX_STANDARD 17) # cpp指定标准 # 设定编译的FLAGS set(CMAKE_CXX_FLAGS -g -W) string(REPLACE &#34;;&#34; &#34; &#34; CMAKE_CXX_FLAGS &#34;${CMAKE_CXX_FLAGS}&#34;) message(STATUS &#34;CMAKE_CXX_FLAGS: &#34; &#34;${CMAKE_CXX_FLAGS}&#34;) # 添加一个可执行文件 add_executable(main main.">
   
 
 
@@ -91,7 +71,6 @@ Let&amp;rsquo;s do it
         
         
         
-
         <li >
             <a href='/' >
                 
@@ -102,7 +81,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='https://learncppcn.github.io/' >
                 
@@ -113,7 +91,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='/about' >
                 
@@ -124,7 +101,6 @@ Let&amp;rsquo;s do it
         </li>
         
         
-
         <li >
             <a href='/open_source' >
                 
@@ -134,31 +110,12 @@ Let&amp;rsquo;s do it
             </a>
         </li>
         
+        <li class="menu-bottom-section">
+            <ol class="menu">
 
-        <div class="menu-bottom-section">
-                <li id="i18n-switch">  
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M4 5h7" />
-  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
-  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
-  <path d="M12 20l4 -9l4 9" />
-  <path d="M19.1 18h-6.2" />
-</svg>
-
-
-
-                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
-                        
-                            <option value="/" selected></option>
-                        
-                    </select>
-                </li>
-            
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -166,7 +123,7 @@ Let&amp;rsquo;s do it
 
 
 
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -174,13 +131,17 @@ Let&amp;rsquo;s do it
 
 
 
-                    <span>Dark Mode</span>
-                </li>
-            
-        </div>
+                        <span>Dark Mode</span>
+                    </li>
+                
+            </ol>
+        </li>
     </ol>
 </aside>
-<main class="main full-width">
+
+    
+
+            <main class="main full-width">
     <article class="main-article">
     <header class="article-header">
 
@@ -195,6 +156,9 @@ Let&amp;rsquo;s do it
         
     </div>
 
+    
+    
+    
     
     <footer class="article-time">
         
@@ -232,6 +196,7 @@ Let&amp;rsquo;s do it
 
     
 </div>
+
 </header>
 
     <section class="article-content">
@@ -244,8 +209,10 @@ Let&amp;rsquo;s do it
 <p>所有的代码都在 <a class="link" href="https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo"  target="_blank" rel="noopener"
     >https://github.com/dashjay/http_demo/tree/master/1-cmake-socket-echo</a> 中</p>
 <p>Let&rsquo;s do it</p>
-<h2 id="0x1-编写一个helloworld并尝试使用cmake编译它">0x1 编写一个HelloWorld并尝试使用Cmake编译它</h2>
-<div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
+<h2 id="0x1-编写一个helloworld并尝试使用cmake编译它">
+    <a href="#0x1-%e7%bc%96%e5%86%99%e4%b8%80%e4%b8%aahelloworld%e5%b9%b6%e5%b0%9d%e8%af%95%e4%bd%bf%e7%94%a8cmake%e7%bc%96%e8%af%91%e5%ae%83" class="header-anchor">#</a>
+    0x1 编写一个HelloWorld并尝试使用Cmake编译它
+</h2><div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
 </span><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">2
@@ -337,12 +304,16 @@ Let&amp;rsquo;s do it
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>build目录下会产生很多文件，通常我们不用理会他们，只需要管我们的输出文件即可。</p>
-<h3 id="为什么弄这么麻烦的东西">为什么弄这么麻烦的东西</h3>
-<p><a class="link" href="https://cmake.org/cmake/help/v3.16/guide/tutorial/index.html"  target="_blank" rel="noopener"
+<h3 id="为什么弄这么麻烦的东西">
+    <a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e5%bc%84%e8%bf%99%e4%b9%88%e9%ba%bb%e7%83%a6%e7%9a%84%e4%b8%9c%e8%a5%bf" class="header-anchor">#</a>
+    为什么弄这么麻烦的东西
+</h3><p><a class="link" href="https://cmake.org/cmake/help/v3.16/guide/tutorial/index.html"  target="_blank" rel="noopener"
     >make新手教程</a></p>
 <p>当项目复杂到一定程度时，有大量自动化的操作可以节省我们的时间，例如我们可以针对Hello World输出生成一个测试，每次编写完程序，我们只需要make一下（如果cmake文件没有变化的话），然后运行make test来进行自动化测试（测试样例需要我们自己编写）。当然这个Cmake在本次项目中的作用也不是很能体现出优势，但是笔者认为仍然有必要学习这种自动化工具。</p>
-<h2 id="0x2-选用一个cpp的socket库">0x2 选用一个cpp的socket库</h2>
-<p>经过一些挑选，选中了一个叫<a class="link" href="https://github.com/fpagliughi/sockpp"  target="_blank" rel="noopener"
+<h2 id="0x2-选用一个cpp的socket库">
+    <a href="#0x2-%e9%80%89%e7%94%a8%e4%b8%80%e4%b8%aacpp%e7%9a%84socket%e5%ba%93" class="header-anchor">#</a>
+    0x2 选用一个cpp的socket库
+</h2><p>经过一些挑选，选中了一个叫<a class="link" href="https://github.com/fpagliughi/sockpp"  target="_blank" rel="noopener"
     >Sockpp</a>的库。这个库用法很“现代”CPP，十分舒适，有很多上古socket库，用法或者代码比较古老了，我就只推荐这个了。</p>
 <p>安装也很简单</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
@@ -358,8 +329,10 @@ Let&amp;rsquo;s do it
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>这样，sockpp就安装到你系统中了，确切的说是分别安装了头文件和依赖库到你系统的 include 和 lib 中。</p>
-<h3 id="1-了解sockpp的使用">1. 了解sockpp的使用</h3>
-<p>我们在本节课中暂时只简单的使用 tcp 接收一些数据，因此我们在本节课程里只引入 sockpp 的一个头部 <code>#include &quot;sockpp/tcp_acceptor.h&quot;</code>
+<h3 id="1-了解sockpp的使用">
+    <a href="#1-%e4%ba%86%e8%a7%a3sockpp%e7%9a%84%e4%bd%bf%e7%94%a8" class="header-anchor">#</a>
+    1. 了解sockpp的使用
+</h3><p>我们在本节课中暂时只简单的使用 tcp 接收一些数据，因此我们在本节课程里只引入 sockpp 的一个头部 <code>#include &quot;sockpp/tcp_acceptor.h&quot;</code>
 这样几行代码，就可以指定端口绑定，监听，等待连接的到来。</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
@@ -386,8 +359,10 @@ Let&amp;rsquo;s do it
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>sockpp::tcp_socket sock = acc.accept();
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="2-写一个echo">2. 写一个Echo</h3>
-<p>不多废话，直接看代码</p>
+</div><h3 id="2-写一个echo">
+    <a href="#2-%e5%86%99%e4%b8%80%e4%b8%aaecho" class="header-anchor">#</a>
+    2. 写一个Echo
+</h3><p>不多废话，直接看代码</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -486,8 +461,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="3-echo代码编译运行">3. Echo代码编译运行</h3>
-<p>我们首先尝试直接使用 g++ 编译这串代码</p>
+</div><h3 id="3-echo代码编译运行">
+    <a href="#3-echo%e4%bb%a3%e7%a0%81%e7%bc%96%e8%af%91%e8%bf%90%e8%a1%8c" class="header-anchor">#</a>
+    3. Echo代码编译运行
+</h3><p>我们首先尝试直接使用 g++ 编译这串代码</p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272"> 1
@@ -623,8 +600,10 @@ Let&amp;rsquo;s do it
 </span></span><span style="display:flex;"><span>hello world <span style="color:#007f7f"># &lt;- 收到的数据</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h2 id="0x3-使用cmake进行自动编译server">0x3 使用Cmake进行自动编译Server</h2>
-<p>我们在Cmake中添加一个可执行文件，向之前的FLAG添加一个<code>-lsockpp</code></p>
+</div><h2 id="0x3-使用cmake进行自动编译server">
+    <a href="#0x3-%e4%bd%bf%e7%94%a8cmake%e8%bf%9b%e8%a1%8c%e8%87%aa%e5%8a%a8%e7%bc%96%e8%af%91server" class="header-anchor">#</a>
+    0x3 使用Cmake进行自动编译Server
+</h2><p>我们在Cmake中添加一个可执行文件，向之前的FLAG添加一个<code>-lsockpp</code></p>
 <div class="highlight"><div style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;">
 <table style="border-spacing:0;padding:0;margin:0;border:0;"><tr><td style="vertical-align:top;padding:0;margin:0;border:0;">
 <pre tabindex="0" style="color:#e5e5e5;background-color:#000;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code><span style="white-space:pre;-webkit-user-select:none;user-select:none;margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#727272">1
@@ -714,8 +693,10 @@ Let&amp;rsquo;s do it
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>再次执行<code>cmake .. &amp;&amp; make</code> 后，成功编译出<code>server</code>，执行，并且使用 <code>telnet</code> 小工具帮助我们调试。</p>
-<h2 id="0x4-总结">0x4 总结</h2>
-<p>今天我们做了以下事情：</p>
+<h2 id="0x4-总结">
+    <a href="#0x4-%e6%80%bb%e7%bb%93" class="header-anchor">#</a>
+    0x4 总结
+</h2><p>今天我们做了以下事情：</p>
 <ul>
 <li>用CPP写了一个Hello World</li>
 <li>学习使用Cmake运行普通的程序，添加链接库等</li>
@@ -740,7 +721,7 @@ Let&amp;rsquo;s do it
 
 
         <span>
-            Last updated on Apr 22, 2024 08:08 UTC
+            Last updated on Apr 22, 2024 08:19 UTC
         </span>
     </section></footer>
 
@@ -755,6 +736,37 @@ Let&amp;rsquo;s do it
      
     
         
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
+<script>
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
+    });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
+</script>
+
+
+
     
 
     <footer class="site-footer">
@@ -766,9 +778,7 @@ Let&amp;rsquo;s do it
     
     <section class="powerby">
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.13.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
-        <br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" rel="noopener">鄂ICP备20003755号</a>
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.25.0">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
     </section>
 </footer>
 
@@ -852,8 +862,6 @@ Let&amp;rsquo;s do it
             >
 
             </main>
-    
-
         </div>
         <script 
                 src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
