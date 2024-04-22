@@ -21,7 +21,7 @@
 1 C1(const C1 &amp;amp;copy) = delete; 今天要说的就是这点的东西，以前在学习过程中忽略了很多东西，但是就是这些东西，往往会让我们踩坑，这种东西又急不来，只能写点文章记录一下，过程。'>
 <meta property='og:url' content='/post/2020/06/26/cpp%E7%9A%84%E8%B5%8B%E5%80%BC%E8%BF%90%E7%AE%97%E7%AC%A6%E9%87%8D%E8%BD%BD/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-26T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-26T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
 <meta name="twitter:title" content="cpp的赋值运算符重载">
 <meta name="twitter:description" content="赋值运算符 的重载通常使用普通的成员函数来实现，为什么讲这个，因为我今天在写代码过程中发现一个bug，并且一开始没发现是这个问题（自赋值）。
 1 C1 &amp;amp;operator=(const C1 &amp;amp;c); 我发现如果一旦当赋值操作涉及内存操作，如动态内存的开辟和释放，并且不小心使用了 A=A 这种操作时，就会引发严重的后果，例如：
@@ -72,13 +72,7 @@
             <figure class="site-avatar">
                 <a href="/">
                 
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
+                    <img src="https://avatars.githubusercontent.com/u/45532257?v=4" width="300" height="300" class="site-logo" loading="lazy" alt="Avatar">
                 
                 </a>
                 
@@ -320,7 +314,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 08:02 UTC
+            Last updated on Apr 22, 2024 08:08 UTC
         </span>
     </section></footer>
 

@@ -19,7 +19,7 @@ LSM树是一个横跨内存和磁盘的，包含多颗&amp;quot;子树&amp;quot;
 0x01 LSM tree 与分布式架构 最近转组到一个数据组，开始接触一些诸如分布式系统，Linux IO等相关的一些知识，学习组内一套基于 LSM tree 为核心的分布式存储架构的设计。大部分现有的 LSM tree 的实现通常都是单机的，接口大部分酷似 boltdb，都是单机的一个存储。'>
 <meta property='og:url' content='/post/2023/05/06/a-implemention-for-big-object-kv-base-on-lsm-tree/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:02:57&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-05-06T11:27:44&#43;08:00'/><meta property='article:modified_time' content='2024-04-22T08:08:45&#43;00:00'/>
 <meta name="twitter:title" content="分享一下公司自维护的一个支持大 Object 的 lsm-tree kv 存储">
 <meta name="twitter:description" content="0x00 背景介绍 LSM tree 拥有无可匹敌的写入速度，主要原因是该模式将大量随即写入修改为顺序写入，相对于B族树，LSM更能进一步榨干HDD磁盘的写带宽，避免出现随机IO 到 HDD 上。根据文章 深入浅出分析LSM树（日志结构合并树） 中的介绍，LSM 并没有一种特定的实现方式，它的模式更像是这样：
 “磁盘顺序写” &#43; “多个树(状数据结构)” &#43; “冷热（新老）数据分级” &#43; “定期归并” &#43; “非原地更新”这几种特性统一在一起的思想
@@ -69,13 +69,7 @@ LSM树是一个横跨内存和磁盘的，包含多颗&amp;quot;子树&amp;quot;
             <figure class="site-avatar">
                 <a href="/">
                 
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_huda2458f72ce188392d75c5d51cd8e24e_373_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
+                    <img src="https://avatars.githubusercontent.com/u/45532257?v=4" width="300" height="300" class="site-logo" loading="lazy" alt="Avatar">
                 
                 </a>
                 
@@ -284,7 +278,7 @@ LSM树是一个横跨内存和磁盘的，包含多颗&amp;quot;子树&amp;quot;
 
 
         <span>
-            Last updated on Apr 22, 2024 08:02 UTC
+            Last updated on Apr 22, 2024 08:08 UTC
         </span>
     </section></footer>
 
