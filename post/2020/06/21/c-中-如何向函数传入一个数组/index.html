@@ -6,11 +6,11 @@
 
 <link rel='canonical' href='/post/2020/06/21/c-%E4%B8%AD-%E5%A6%82%E4%BD%95%E5%90%91%E5%87%BD%E6%95%B0%E4%BC%A0%E5%85%A5%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84/'>
 
-<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="c++ 中 如何向函数传入一个数组？">
+<link rel="stylesheet" href="/scss/style.min.760e3dabc1e140d2e6abd27a8ca0aabb60e568829b29f67d2df12024136eff37.css"><meta property='og:title' content="c++ 中 如何向函数传入一个数组？">
 <meta property='og:description' content="# 如何向函数传入一个数组 这看起来是一个简单的问题，但是无论使用哪个方法，总是不能同时兼顾几个问题。 函数的参数在编译时，参数和临时变量等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。 1 2 3 void DoSth(int a[4]){ // } 即便你这样传入，你的编译器也会认为你传入的是一个int *。 1 2 int arr[5] = {0,0,0,0,0}; DoSth(arr); 编译器也不会判你为错误，用一个词叫退化(degrade),你的int a[4]会退化成为一个int *a 两者究竟有什么区别？ 区别就是，没退化(degrade)之前，你可以知道它的长度，退化之后，便不得而知，通过以下case你可以检验我上面说的这句话 1 2 3 4 int array[5]{ 1, 2, 3, 4, 5}; std::cout &lt;&lt; sizeof(array) &lt;&lt; &#34;\\n&#34;; // 20 (在我的电脑上) int *ptr{ array }; // 手动退化 std::cout &lt;&lt; sizeof(ptr) &lt;&lt; &#34;\\n&#34;; // 8 (在我的电脑上) 为啥要说（在我的电脑上）：int在我的电脑上是4个字节，int *是8字节，也许在32位的电脑上会有所不同。 言归正传，回到问题本身，C++为何不允许在函数中直接传递数组：我大概明白你的意思，就是你想在不退化的情况下，直接传递一个数组包含的全部信息到函数中。 先说能不能做，再说为什么不推荐。 可以: 如果仅仅是不退化是可以做到的： 1 void Dosth1(int (&amp;arr)[4]){} 这样就可以完成题目的愿望，或者你可以仍然认为我没有完成因为：">
 <meta property='og:url' content='/post/2020/06/21/c-%E4%B8%AD-%E5%A6%82%E4%BD%95%E5%90%91%E5%87%BD%E6%95%B0%E4%BC%A0%E5%85%A5%E4%B8%80%E4%B8%AA%E6%95%B0%E7%BB%84/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-21T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T06:40:01&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-06-21T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T07:01:17&#43;00:00'/>
 <meta name="twitter:title" content="c++ 中 如何向函数传入一个数组？">
 <meta name="twitter:description" content="# 如何向函数传入一个数组 这看起来是一个简单的问题，但是无论使用哪个方法，总是不能同时兼顾几个问题。 函数的参数在编译时，参数和临时变量等大小已经决定（栈空间大小），因此无法传入长度可能不定的一个参数。 1 2 3 void DoSth(int a[4]){ // } 即便你这样传入，你的编译器也会认为你传入的是一个int *。 1 2 int arr[5] = {0,0,0,0,0}; DoSth(arr); 编译器也不会判你为错误，用一个词叫退化(degrade),你的int a[4]会退化成为一个int *a 两者究竟有什么区别？ 区别就是，没退化(degrade)之前，你可以知道它的长度，退化之后，便不得而知，通过以下case你可以检验我上面说的这句话 1 2 3 4 int array[5]{ 1, 2, 3, 4, 5}; std::cout &lt;&lt; sizeof(array) &lt;&lt; &#34;\\n&#34;; // 20 (在我的电脑上) int *ptr{ array }; // 手动退化 std::cout &lt;&lt; sizeof(ptr) &lt;&lt; &#34;\\n&#34;; // 8 (在我的电脑上) 为啥要说（在我的电脑上）：int在我的电脑上是4个字节，int *是8字节，也许在32位的电脑上会有所不同。 言归正传，回到问题本身，C++为何不允许在函数中直接传递数组：我大概明白你的意思，就是你想在不退化的情况下，直接传递一个数组包含的全部信息到函数中。 先说能不能做，再说为什么不推荐。 可以: 如果仅仅是不退化是可以做到的： 1 void Dosth1(int (&amp;arr)[4]){} 这样就可以完成题目的愿望，或者你可以仍然认为我没有完成因为：">
   
@@ -314,7 +314,7 @@
 
 
         <span>
-            Last updated on Apr 25, 2024 06:40 UTC
+            Last updated on Apr 25, 2024 07:01 UTC
         </span>
     </section></footer>
 
@@ -345,6 +345,7 @@
         admin: ["dashjay"],
         distractionFreeMode: false, 
         id: md5(location.pathname), 
+        proxy:"https://cors-anywhere.dashjwz.workers.dev/?https://github.com/login/oauth/access_token",
     });
     (function () {
         if (

@@ -6,11 +6,11 @@
 
 <link rel='canonical' href='/post/2020/10/25/%E7%94%A8%E5%B0%8F%E5%86%85%E5%AD%98%E8%81%9A%E5%90%88%E9%9D%9E%E5%B8%B8%E5%A4%A7%E9%87%8F%E7%9A%84%E6%97%A5%E5%BF%97/'>
 
-<link rel="stylesheet" href="/scss/style.min.b2b677b72f2ac3ca57e9c08286edc3afa763e8ecd80c153192ce7eaec11177d4.css"><meta property='og:title' content="用小内存聚合非常大量的日志">
+<link rel="stylesheet" href="/scss/style.min.760e3dabc1e140d2e6abd27a8ca0aabb60e568829b29f67d2df12024136eff37.css"><meta property='og:title' content="用小内存聚合非常大量的日志">
 <meta property='og:description' content="# 0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下： 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘 最终结果输出大约是这样 1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。 # 0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。 我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。 # 0x2 指针 + LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。 # 0x3 建堆 上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。 具体工程实现再继续讨论吧。">
 <meta property='og:url' content='/post/2020/10/25/%E7%94%A8%E5%B0%8F%E5%86%85%E5%AD%98%E8%81%9A%E5%90%88%E9%9D%9E%E5%B8%B8%E5%A4%A7%E9%87%8F%E7%9A%84%E6%97%A5%E5%BF%97/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T06:40:01&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-10-25T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T07:01:17&#43;00:00'/>
 <meta name="twitter:title" content="用小内存聚合非常大量的日志">
 <meta name="twitter:description" content="# 0x0 楔子 在旷世科技的面试中，以为面试官出的题目，某台机器产生了非常多的日志，格式如下： 1 2 3 4 5 2020-10-20 10:21:30 /api/login 300ms 2020-10-20 10:21:40 /api/a 192ms 2020-10-20 10:21:50 /api/login 210ms ........ 2020-10-20 22:21:30 /api/a 22ms 日志容量大约是10G，然后内存只有2G，希望我们能尝试读取日志，聚合并且输出到磁盘 最终结果输出大约是这样 1 2 /api/login 510ms /api/a 214ms 看到这个题目的时候，我第一反应就是分割处理，局部聚合，然后导入内存局部聚合，输出，最终到一次能搞定的程度，在全部聚合。 但是当我简单写了一些代码之后，描述了我的想法之后，面试官点点头，但是提出了局部聚合也会爆内存，可能想引导我说出什么其他的方法，可是我不知道他到底想让我说什么。 # 0x1 分治 在非常短的时间内，我虽然把分治的过程说出来了，但是我没有说出的这个关键词，分治。 我认为就是对日志进行分割，再分割，最终到达2G内存能够读入的状态，局部聚合，再聚合最后全局聚合，这就是分治的思想，可是我当时是太愚钝，没有说出关键词，搞的面试官也很着急。 # 0x2 指针 + LFU 首先使用指针指向文件头部，然后创建一个 LFU 表，尺寸大小刚好为 2G，然后就开始读取并且存储在 LFU 中，当 LFU 缓存满了就把命中频率最少的路由给先暂时缓存到文件中，等到下次换入的时候，再文件中读取，我觉得这个方法是一个更好的方法，它写起来更简单，磁盘读写的次数会相对少（如果URL的分布不太离散），更加智能。 # 0x3 建堆 上面的 指针 + LFU 确实挺工程的，我认为已经非常聪明了。 我可以对这些记录建堆，这样最终输出的也就已经是排序的了，把最后的排序平均分配到每一次操作了。 首先创建一个 1G 大小的堆空间，和 1G 大小的hash表，使用hash表能快速知道字符串在堆的哪个位置，使用堆能半自动化排序。 具体工程实现再继续讨论吧。">
   
@@ -269,7 +269,7 @@
 
 
         <span>
-            Last updated on Apr 25, 2024 06:40 UTC
+            Last updated on Apr 25, 2024 07:01 UTC
         </span>
     </section></footer>
 
@@ -300,6 +300,7 @@
         admin: ["dashjay"],
         distractionFreeMode: false, 
         id: md5(location.pathname), 
+        proxy:"https://cors-anywhere.dashjwz.workers.dev/?https://github.com/login/oauth/access_token",
     });
     (function () {
         if (
