@@ -10,7 +10,7 @@
 <meta property='og:description' content="创建于 2020-07-31，最终修订于 2020-08-06 在之前的课程(二)中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容： 今天的任务是 &ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&rdquo;。 所有的代码都在 https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog 中 Let&rsquo;s do it # 0x1 为什么要载入配置文件 众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如： 程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。 平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。 当遇到这些内容修改时，我们是不希望再编译一遍的。 而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。 我推荐使用 TOML 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。 经过一些选择之后我找到一个库，叫 cpptoml # 0x2 cpptoml A header-only library for parsing TOML configuration files. # 安装 1 2 3 git clone https://github.com/toml-lang/toml.git cd toml; mkdir build; cd build cmake .. &amp;&amp; make &amp;&amp; make install 看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？ 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。 # 小尝试 本次的所有代码都基于上次课程的开始。 1 2 3 4 5 6 7 8 9 10 11 12 #include&lt;iostream&gt; #include &#34;cxxhttp.">
 <meta property='og:url' content='/post/2020/08/03/%E6%89%8B%E5%8A%A8%E7%94%A8cpp%E5%AE%9E%E7%8E%B0http%E4%B8%89/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T11:33:19&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-08-03T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T06:40:01&#43;00:00'/>
 <meta name="twitter:title" content="手动用cpp实现http(三)">
 <meta name="twitter:description" content="创建于 2020-07-31，最终修订于 2020-08-06 在之前的课程(二)中我们讲了有关 HTTP 头部，请求体和返回结构在 cpp中的定义，今天我们来说一些很不相关，但是也很重要的内容： 今天的任务是 &ldquo;[易]引入cpptoml从文件读取配置，引入spdlog尝试打log，帮助调试&rdquo;。 所有的代码都在 https://github.com/dashjay/http_demo/tree/3-cpptoml-spdlog 中 Let&rsquo;s do it # 0x1 为什么要载入配置文件 众所周知，编译类的程序，编译一次，可运行n次，在通过一些测试后，即可常年工作。但是有些情况下，我们会尝试通过一些方法修改程序的行为，例如： 程序的配置项除了监听端口之外，其实还有很多其他的例如，tls证书位置。 平时日常使用时只会打印出一小部分log，防止大量log堆积导致一些问题，但是当程序出现异常的时候，希望能多打印一些程序，需要调整log程序的打印级别。 当遇到这些内容修改时，我们是不希望再编译一遍的。 而如果这些命令通过标准输入，或者运行时作为参数传入都不是很方便，因此我们会使用配置文件。 我推荐使用 TOML 格式来作为配置，不用再因为担心缩进，支持的格式也很丰富，数组，浮点数，字符串，等等。 经过一些选择之后我找到一个库，叫 cpptoml # 0x2 cpptoml A header-only library for parsing TOML configuration files. # 安装 1 2 3 git clone https://github.com/toml-lang/toml.git cd toml; mkdir build; cd build cmake .. &amp;&amp; make &amp;&amp; make install 看到这里你即便不知道cmake有什么用，但是你也知道他有多常见了吧？ 到目前为止我们电脑里已经安装了sockpp, cpptoml. 他们一个是有链接库的，一个是header only的。 # 小尝试 本次的所有代码都基于上次课程的开始。 1 2 3 4 5 6 7 8 9 10 11 12 #include&lt;iostream&gt; #include &#34;cxxhttp.">
   
@@ -463,7 +463,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 11:33 UTC
+            Last updated on Apr 25, 2024 06:40 UTC
         </span>
     </section></footer>
 
@@ -478,31 +478,36 @@
      
     
         
-    <link rel="stylesheet" href="https://unpkg.com/vssue/dist/vssue.min.css" />
-
-<div id="vssue"></div>
-
-<script src="https://unpkg.com/vue@2/dist/vue.runtime.min.js"></script>
-<script src="https://unpkg.com/vssue/dist/vssue.github.min.js"></script>
-
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
 <script>
-    new Vue({
-        el: "#vssue",
-        render: (h) =>
-            h("Vssue", {
-                props: {
-                    title: "手动用cpp实现http(三)",
-                    options: {
-                        autoCreateIssue:  true ,
-                        owner: "dashjay",
-                        repo: "dashjay.github.io",
-                        clientId: "790319b9ce1b0f784836",
-                        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
-                    },
-                },
-            }),
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
     });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
 </script>
+
+
 
     
 

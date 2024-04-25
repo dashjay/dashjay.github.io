@@ -10,7 +10,7 @@
 <meta property='og:description' content="选择产品：Radare2取证工具 # 工具介绍 Radare是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&hellip;&hellip;..下面贴一下man手册中r2的描述 1 2 3 4 5 6 RADARE2(1) BSD General Commands Manual RADARE2(1) NAME radare2 -- Advanced commandline hexadecimal editor, disassembler and debugger # 功能测试 众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。 这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。 # rax2 &mdash;&mdash;&mdash;&gt; 用于数值转换 1 2 $rax2 -s 414141 AAAA% 看下man手册介绍 1 2 3 4 5 6 7 8 9 RAX2(1) BSD General Commands Manual RAX2(1) NAME rax2 -- radare base converter DESCRIPTION This command is part of the radare project.">
 <meta property='og:url' content='/post/2019/12/11/use-of-radare/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-11T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T11:33:19&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2019-12-11T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T06:40:01&#43;00:00'/>
 <meta name="twitter:title" content="Radare 的使用">
 <meta name="twitter:description" content="选择产品：Radare2取证工具 # 工具介绍 Radare是一个取证工具以及可编写脚本的命令行十六进制编辑器，可以打开磁盘文件、支持分析二进制、反汇编代码、调试程序以及连接到远程gdb服务服务器的功能，我看到这个工具以前曾进过Github TOP 30，但是由于各种原因，我们平时都使用GDB，也就忽略了这个工具，看到它被定义为取证工具的时候我有点好奇，什么是计算机取证&hellip;&hellip;..下面贴一下man手册中r2的描述 1 2 3 4 5 6 RADARE2(1) BSD General Commands Manual RADARE2(1) NAME radare2 -- Advanced commandline hexadecimal editor, disassembler and debugger # 功能测试 众所周知GDB可以运行时（runtime）分析，但是R2只是一个静态分析的软件，让我来看看他有多强大，先分析一小段代码看看。 这个软件集成了许多小工具，看来平时写python小工具的时代结束了，这么多附带的小工具我来介绍下。 # rax2 &mdash;&mdash;&mdash;&gt; 用于数值转换 1 2 $rax2 -s 414141 AAAA% 看下man手册介绍 1 2 3 4 5 6 7 8 9 RAX2(1) BSD General Commands Manual RAX2(1) NAME rax2 -- radare base converter DESCRIPTION This command is part of the radare project.">
   
@@ -732,7 +732,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 11:33 UTC
+            Last updated on Apr 25, 2024 06:40 UTC
         </span>
     </section></footer>
 
@@ -747,31 +747,36 @@
      
     
         
-    <link rel="stylesheet" href="https://unpkg.com/vssue/dist/vssue.min.css" />
-
-<div id="vssue"></div>
-
-<script src="https://unpkg.com/vue@2/dist/vue.runtime.min.js"></script>
-<script src="https://unpkg.com/vssue/dist/vssue.github.min.js"></script>
-
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
 <script>
-    new Vue({
-        el: "#vssue",
-        render: (h) =>
-            h("Vssue", {
-                props: {
-                    title: "Radare 的使用",
-                    options: {
-                        autoCreateIssue:  true ,
-                        owner: "dashjay",
-                        repo: "dashjay.github.io",
-                        clientId: "790319b9ce1b0f784836",
-                        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
-                    },
-                },
-            }),
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
     });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
 </script>
+
+
 
     
 

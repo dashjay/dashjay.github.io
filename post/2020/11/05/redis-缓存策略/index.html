@@ -10,7 +10,7 @@
 <meta property='og:description' content="# 缓存更新策略 缓存中的数据可能会和数据源的真实数据有一段时间不一致，需要利用一些策略来进行更新： LRU/LFU/FIFO 算法 超时剔除 主动更新 策略 一致性 维护成本 LRU/LFU/FIFO 最差 低 超时剔除 较差 较低 主动更新 强 高 # 缓存粒度 如何选择缓存的粒度也比较重要，缓存粒度太大（全部缓存）会导致内存上升。如果缓存粒度太细，反复修改则会降低代码的可维护性 # 缓存穿透 也就是类似缺页，需要从mysql查询再缓存的情况出现。例如攻击者请求了不存在的ID，然后导致大量穿透，数据库读写较慢，拖垮服务器。 这时候有可以设置空对象，如果设置空对象，意味着缓存中存储了很多key，会消耗很多空间，如果是攻击则问题更加严重，设置一个较短的过期时间可以缓解。 如果这时候，在过期时间内，存储层添加了这个数据，就会导致缓存存储不一致，可能影响业务。 # 缓存定期删除方式 惰性删除：读写之前判断key是否过期（CPU友好） 定期删除：定期抽样key，判断是否过期（内存友好）">
 <meta property='og:url' content='/post/2020/11/05/redis-%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5/'>
 <meta property='og:site_name' content='Dashjay&#39;s'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-05T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-22T11:33:19&#43;00:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2020-11-05T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2024-04-25T06:40:01&#43;00:00'/>
 <meta name="twitter:title" content="Redis 缓存策略">
 <meta name="twitter:description" content="# 缓存更新策略 缓存中的数据可能会和数据源的真实数据有一段时间不一致，需要利用一些策略来进行更新： LRU/LFU/FIFO 算法 超时剔除 主动更新 策略 一致性 维护成本 LRU/LFU/FIFO 最差 低 超时剔除 较差 较低 主动更新 强 高 # 缓存粒度 如何选择缓存的粒度也比较重要，缓存粒度太大（全部缓存）会导致内存上升。如果缓存粒度太细，反复修改则会降低代码的可维护性 # 缓存穿透 也就是类似缺页，需要从mysql查询再缓存的情况出现。例如攻击者请求了不存在的ID，然后导致大量穿透，数据库读写较慢，拖垮服务器。 这时候有可以设置空对象，如果设置空对象，意味着缓存中存储了很多key，会消耗很多空间，如果是攻击则问题更加严重，设置一个较短的过期时间可以缓解。 如果这时候，在过期时间内，存储层添加了这个数据，就会导致缓存存储不一致，可能影响业务。 # 缓存定期删除方式 惰性删除：读写之前判断key是否过期（CPU友好） 定期删除：定期抽样key，判断是否过期（内存友好）">
   
@@ -269,7 +269,7 @@
 
 
         <span>
-            Last updated on Apr 22, 2024 11:33 UTC
+            Last updated on Apr 25, 2024 06:40 UTC
         </span>
     </section></footer>
 
@@ -284,31 +284,36 @@
      
     
         
-    <link rel="stylesheet" href="https://unpkg.com/vssue/dist/vssue.min.css" />
-
-<div id="vssue"></div>
-
-<script src="https://unpkg.com/vue@2/dist/vue.runtime.min.js"></script>
-<script src="https://unpkg.com/vssue/dist/vssue.github.min.js"></script>
-
+    <div id="gitalk-container"></div>
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.18.0/js/md5.min.js"></script>
 <script>
-    new Vue({
-        el: "#vssue",
-        render: (h) =>
-            h("Vssue", {
-                props: {
-                    title: "Redis 缓存策略",
-                    options: {
-                        autoCreateIssue:  true ,
-                        owner: "dashjay",
-                        repo: "dashjay.github.io",
-                        clientId: "790319b9ce1b0f784836",
-                        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
-                    },
-                },
-            }),
+    const gitalk = new Gitalk({
+        clientID: "790319b9ce1b0f784836",
+        clientSecret: "6ff794c7a563b9dcab2ae7d1291c2569beade0ce",
+        repo: "dashjay.github.io",
+        owner: "dashjay",
+        admin: ["dashjay"],
+        distractionFreeMode: false, 
+        id: md5(location.pathname), 
     });
+    (function () {
+        if (
+            ["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1
+        ) {
+            document.getElementById("gitalk-container").innerHTML =
+                "Gitalk comments not available by default when the website is previewed locally.";
+            return;
+        }
+        gitalk.render("gitalk-container");
+    })();
 </script>
+
+
 
     
 
